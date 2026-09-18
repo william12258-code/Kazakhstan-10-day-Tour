@@ -1,0 +1,1719 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>2026 哈薩克 · 阿拉木圖十天九夜</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root {
+    --bg: #0f1c24;
+    --ink: #f4efe6;
+    --muted: #b7c5c9;
+    --accent: #d4a017;
+    --teal: #3aa6a0;
+    --coral: #e07a5f;
+    --line: rgba(244,239,230,.14);
+    --nav-h: 52px;
+    --fs: 19px;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%;
+    font-family: "Segoe UI", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    font-size: var(--fs);
+    background: var(--bg); color: var(--ink);
+    overflow: hidden;
+  }
+  .deck { height: 100%; position: relative; }
+  .slide {
+    display: none;
+    height: calc(100% - var(--nav-h));
+    padding: 14px 28px 10px;
+    overflow: hidden;
+    flex-direction: column;
+    animation: fade .28s ease;
+  }
+  .slide.active { display: flex; }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+  .hero {
+    flex: 1; min-height: 0;
+    display: flex; flex-direction: column; justify-content: flex-start;
+    background:
+      linear-gradient(180deg, rgba(15,28,36,.25) 0%, rgba(15,28,36,.92) 70%),
+      radial-gradient(1200px 500px at 80% -10%, #3aa6a055, transparent),
+      linear-gradient(135deg, #1a3a45, #0f1c24 55%, #2a1f14);
+    border-radius: 14px; padding: 22px 32px 16px;
+  }
+  .eyebrow { letter-spacing: .16em; text-transform: uppercase; color: var(--accent); font-size: 14px; margin-bottom: 6px; }
+  h1 { font-size: clamp(34px, 4.4vw, 58px); line-height: 1.1; margin: 0 0 10px; font-weight: 700; }
+  h2 { font-size: clamp(26px, 2.8vw, 34px); margin: 0 0 8px; line-height: 1.2; }
+  h3 { font-size: 19px; margin: 0 0 6px; color: var(--accent); }
+  .lead { font-size: 19px; color: var(--muted); max-width: 920px; line-height: 1.5; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+  .chip {
+    border: 1px solid var(--line); background: rgba(255,255,255,.04);
+    padding: 7px 12px; border-radius: 999px; font-size: 14.5px; color: var(--muted);
+  }
+  .chip strong { color: var(--ink); font-weight: 600; }
+
+  .grid { display: grid; gap: 10px; min-height: 0; }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .fill { flex: 1; min-height: 0; display: grid; gap: 10px; }
+  .fill.cols-2 { grid-template-columns: 1.05fr .95fr; }
+  .fill.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .fill.day-layout {
+    display: grid;
+    grid-template-columns: .82fr 1.18fr;
+    gap: 10px;
+  }
+  .day-main {
+    display: flex; flex-direction: column; gap: 8px;
+    min-height: 0; height: 100%;
+  }
+  .day-main .card.scroll-safe {
+    height: auto; flex: 0 0 auto;
+    overflow: visible; align-self: stretch;
+  }
+  .day-main .card.scroll-safe .timeline {
+    flex: 0 0 auto; justify-content: flex-start; gap: 0;
+  }
+  .day-main .card.scroll-safe .timeline li { flex: 0 0 auto; padding: 5px 0; }
+  .day-main > .fig-row {
+    flex: 1 1 auto; height: auto; min-height: 180px;
+  }
+  .day-main > .card { flex: 0 0 auto; }
+  .fill.day-layout > .map-stack {
+    min-height: 0; height: 100%;
+  }
+  .stack { display: flex; flex-direction: column; gap: 6px; min-height: 0; height: 100%; }
+  .stack > .map { flex: 1; min-height: 0; height: auto !important; }
+
+  .card {
+    background: linear-gradient(180deg, #1b3642, #152c36);
+    border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+    min-height: 0;
+  }
+  .card p, .card li { color: var(--muted); line-height: 1.5; font-size: 17px; }
+  .card ul { margin: 0; padding-left: 16px; }
+  .card li { margin-bottom: 4px; }
+  .name-en { color: var(--teal); font-weight: 600; }
+  .tag {
+    display: inline-block; font-size: 11px; letter-spacing: .05em;
+    padding: 2px 8px; border-radius: 5px; background: #234853; color: #d7ebe8; margin-bottom: 6px;
+  }
+  .tag.warn { background: #4a2f1f; color: #ffd2b8; }
+  .tag.ok { background: #1f3d32; color: #b8f0d4; }
+  .tag.route { background: #3a2f14; color: #ffe6a3; }
+
+  .card.scroll-safe {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  .timeline { list-style: none; margin: 0; padding: 0; }
+  .card.scroll-safe .timeline {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 0;
+  }
+  .card.scroll-safe .timeline li { flex: 1; }
+  .timeline li {
+    display: grid; grid-template-columns: 72px 1fr; gap: 10px;
+    padding: 8px 0; border-bottom: 1px solid var(--line);
+    align-items: center;
+  }
+  .timeline li:last-child { border-bottom: 0; }
+  .t-time { color: var(--accent); font-weight: 700; font-size: 17px; }
+  .t-body strong { display: inline; margin: 0; font-size: 18px; }
+  .t-body span { color: var(--muted); font-size: 16px; line-height: 1.4; }
+  .t-body strong::after { content: " · "; color: #6a7e85; font-weight: 400; }
+
+  .map {
+    height: 100%; min-height: 0; border-radius: 12px; overflow: hidden;
+    border: 1px solid var(--line); background: #0b151a;
+  }
+  .map-note { font-size: 12px; color: var(--muted); margin: 4px 0 0; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+  .legend span { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 5px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--accent); font-weight: 600; }
+  td { color: var(--muted); }
+  td strong { color: var(--ink); }
+
+  .nav {
+    position: fixed; left: 0; right: 0; bottom: 0; height: var(--nav-h);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 14px; background: rgba(10,18,24,.94); backdrop-filter: blur(8px);
+    border-top: 1px solid var(--line); z-index: 50;
+  }
+  .nav button {
+    background: #234853; color: var(--ink); border: 0; border-radius: 8px;
+    padding: 8px 14px; cursor: pointer; font-size: 14px;
+  }
+  .nav button:hover { background: #2d5c69; }
+  .progress-wrap { flex: 1; margin: 0 12px; }
+  .progress-bar { height: 3px; background: #24343c; border-radius: 99px; overflow: hidden; }
+  .progress-bar > i {
+    display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--teal), var(--accent));
+  }
+  .page { font-size: 12px; color: var(--muted); text-align: center; margin-top: 4px; }
+  .kbd { font-size: 12px; color: #7f949b; }
+
+  .callout {
+    border-left: 3px solid var(--coral); padding: 6px 10px;
+    background: rgba(224,122,95,.08); border-radius: 0 8px 8px 0; margin: 6px 0;
+    color: var(--muted); font-size: 12.5px; line-height: 1.4;
+  }
+  .callout strong { color: #ffc2ad; }
+  .split-title {
+    display: flex; justify-content: space-between; gap: 10px; align-items: end;
+    flex-wrap: wrap; margin-bottom: 8px; flex: 0 0 auto;
+  }
+  .day-badge {
+    background: var(--accent); color: #1a1408; font-weight: 800;
+    padding: 6px 10px; border-radius: 8px; font-size: 12px; white-space: nowrap;
+  }
+  .two-col-tight { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .mini { font-size: 12.5px; color: var(--muted); }
+  .price { color: var(--accent); font-weight: 700; }
+
+  .day-banner {
+    position: relative; height: 88px; flex: 0 0 auto;
+    border-radius: 12px; overflow: hidden;
+    margin: 0 0 8px; border: 1px solid var(--line);
+  }
+  .day-banner img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .day-banner .cap {
+    position: absolute; inset: auto 0 0 0;
+    padding: 20px 14px 10px;
+    background: linear-gradient(transparent, rgba(10,18,24,.92));
+  }
+  .day-banner .cap strong { display: block; font-size: 19px; }
+  .day-banner .cap span { color: var(--muted); font-size: 14px; }
+
+  .mosaic {
+    flex: 1; min-height: 0;
+    display: grid; grid-template-columns: 1.35fr 1fr 1fr; grid-template-rows: 1fr 1fr;
+    gap: 8px;
+  }
+  .mosaic .tile {
+    position: relative; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); min-height: 0;
+  }
+  .mosaic .tile:first-child { grid-row: 1 / span 2; }
+  .mosaic .tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .mosaic .tile em {
+    position: absolute; left: 8px; bottom: 8px; right: 8px;
+    font-style: normal; font-size: 13px; font-weight: 700;
+    text-shadow: 0 1px 8px #000; color: #fff;
+  }
+  .pic-card {
+    background: linear-gradient(180deg, #1b3642, #152c36);
+    border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+    display: flex; flex-direction: column; min-height: 0; height: 100%;
+  }
+  .pic-card .shot {
+    position: relative; flex: 1 1 auto; min-height: 150px; background: #0b151a;
+  }
+  .pic-card .shot img {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block;
+  }
+  .pic-card .txt { padding: 10px 12px 12px; flex: 0 0 auto; }
+  .pic-card .txt h3 { margin-top: 0; font-size: 16px; }
+  .pic-card .txt p { font-size: 14.5px; line-height: 1.45; color: var(--muted); margin: 0; }
+  .feat-row {
+    display: grid; grid-template-columns: 1.1fr .9fr; gap: 10px; flex: 1; min-height: 0;
+  }
+  .feat-photo {
+    border-radius: 12px; overflow: hidden; min-height: 0; height: 100%;
+    border: 1px solid var(--line); position: relative;
+  }
+  .feat-photo img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+  .feat-photo .label {
+    position: absolute; left: 10px; bottom: 10px; right: 10px;
+    background: rgba(10,18,24,.75); backdrop-filter: blur(6px);
+    padding: 8px 10px; border-radius: 8px; font-size: 12.5px; color: var(--muted); line-height: 1.4;
+  }
+  .feat-photo .label b { color: var(--ink); display: block; margin-bottom: 2px; font-size: 13.5px; }
+  .cover-strip {
+    display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr;
+    gap: 8px; margin-top: 16px; flex: 0 0 auto;
+    width: min(620px, 54vw); height: 300px;
+    align-self: flex-start;
+  }
+  .cover-strip > div {
+    display: flex; flex-direction: column; min-width: 0; min-height: 0; height: 100%;
+  }
+  .cover-strip .shot {
+    flex: 1; min-height: 0; border-radius: 12px; overflow: hidden;
+    border: 1px solid var(--line); position: relative; background: #0b151a;
+  }
+  .cover-strip .shot img {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block;
+  }
+  .cover-strip .cover-cap {
+    font-size: 12px; color: var(--muted); text-align: center; margin-top: 4px; flex: 0 0 auto;
+  }
+  ol { font-size: 13.5px; }
+
+  .ov-arc {
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+    margin: 0 0 8px; padding: 8px 10px; flex: 0 0 auto;
+    background: rgba(255,255,255,.03); border: 1px solid var(--line); border-radius: 10px;
+  }
+  .ov-arc .seg {
+    display: inline-flex; align-items: center;
+    padding: 5px 10px; border-radius: 999px; font-size: 12px; font-weight: 700;
+  }
+  .ov-arc .seg.city { background: #1f3d45; color: #b8e8e4; }
+  .ov-arc .seg.mtn { background: #243a28; color: #c8e8b8; }
+  .ov-arc .seg.tour { background: #3a2f14; color: #ffe6a3; }
+  .ov-arc .seg.fly { background: #3a221c; color: #ffc2ad; }
+  .ov-arc .arrow { color: #5a7078; font-size: 12px; }
+  .ov-layout {
+    flex: 1; min-height: 0;
+    display: grid;
+    grid-template-columns: 1.15fr .85fr;
+    gap: 12px;
+  }
+  .ov-map-wrap { display: flex; flex-direction: column; min-height: 0; height: 100%; }
+  .ov-map-wrap .map { flex: 1; min-height: 0; height: auto !important; border-radius: 12px; }
+  .ov-map-meta {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    flex-wrap: wrap; margin-top: 6px; flex: 0 0 auto;
+  }
+  .ov-days {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: repeat(5, 1fr);
+    grid-auto-flow: column;
+    gap: 8px;
+    min-height: 0;
+    height: 100%;
+  }
+  a.ov-day {
+    display: grid; grid-template-columns: 118px 1fr; gap: 8px;
+    background: linear-gradient(180deg, #1b3642, #152c36);
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    text-decoration: none; color: inherit; cursor: pointer;
+    transition: border-color .15s, transform .12s;
+    min-height: 0; height: 100%;
+  }
+  a.ov-day:hover { border-color: rgba(212,160,23,.55); transform: translateY(-1px); }
+  a.ov-day .thumb { width: 118px; height: 100%; min-height: 0; background: #0b151a; }
+  a.ov-day .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  a.ov-day .body { padding: 6px 8px 6px 0; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+  a.ov-day .d-date { font-size: 12px; color: var(--accent); font-weight: 800; }
+  a.ov-day .d-title {
+    font-size: 13px; color: var(--ink); font-weight: 700; line-height: 1.25; margin: 2px 0 3px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .ov-cat {
+    display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .03em;
+    padding: 1px 6px; border-radius: 3px; width: fit-content;
+  }
+  .ov-cat.city { background: #1f3d45; color: #b8e8e4; }
+  .ov-cat.mtn { background: #243a28; color: #c8e8b8; }
+  .ov-cat.tour { background: #3a2f14; color: #ffe6a3; }
+  .ov-cat.fly { background: #3a221c; color: #ffc2ad; }
+  .ov-hint { font-size: 12px; color: var(--muted); margin: 0; line-height: 1.4; flex: 0 0 auto; }
+  .leaflet-photo-icon {
+    width: 34px !important; height: 34px !important;
+    border-radius: 50%; border: 3px solid #f4efe6; overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,.5); background: #0b151a;
+    flex: 0 0 auto;
+  }
+  .leaflet-photo-icon img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .leaflet-photo-icon.tour { border-color: #d4a017; }
+  .leaflet-photo-icon.mtn { border-color: #7ec87a; }
+  .leaflet-photo-icon.city { border-color: #3aa6a0; }
+  .leaflet-photo-icon.fly { border-color: #e07a5f; }
+  .leaflet-div-icon.photo-pin {
+    background: transparent !important; border: 0 !important;
+  }
+  .photo-pin-wrap {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    width: 36px;
+  }
+  .photo-pin-dot {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid #f4efe6; display: block; flex: 0 0 auto;
+    box-shadow: 0 1px 5px rgba(0,0,0,.7);
+  }
+
+
+  .hero > .eyebrow,
+  .hero > h1,
+  .hero > .lead,
+  .hero > .meta,
+  .hero > .mini,
+  .hero > .grid { flex: 0 0 auto; }
+  .hero > .cover-strip { flex: 0 0 auto; margin-top: 16px; }
+  .cover-strip .shot {
+    flex: 1; min-height: 0; border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--line); position: relative; background: #0b151a;
+  }
+  .hero-photo > h1 { font-size: clamp(28px, 3.4vw, 46px); margin: 0 0 8px; }
+  .hero-photo > .lead { font-size: 16px; max-width: 920px; }
+  .hero-photo > .meta { margin-top: 10px; }
+  .hero-photo {
+    background:
+      linear-gradient(180deg, rgba(15,28,36,.3) 0%, rgba(15,28,36,.92) 72%),
+      url("https://commons.wikimedia.org/wiki/Special:FilePath/Zenkov_Cathedral%2C_Almaty.jpg?width=1600") center/cover no-repeat,
+      linear-gradient(135deg, #1a3a45, #0f1c24 55%, #2a1f14);
+  }
+  .hero-photo-charyn {
+    justify-content: center;
+    background:
+      linear-gradient(180deg, rgba(15,28,36,.35) 0%, rgba(15,28,36,.93) 70%),
+      url("https://commons.wikimedia.org/wiki/Special:FilePath/Чарынский_каньон%2C_Долина_Замков_2.jpg?width=1600") center/cover no-repeat,
+      #0f1c24;
+  }
+  .place-grid {
+    flex: 0 0 auto; min-height: 0; overflow: hidden;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px;
+    font-size: 16px; align-content: start;
+  }
+  .place-grid div { padding: 3px 0; border-bottom: 1px solid var(--line); color: var(--muted); }
+  .place-grid b { color: var(--ink); font-weight: 600; }
+  .fill.places-layout {
+    display: flex; flex-direction: column; gap: 10px;
+    grid-template-columns: none;
+  }
+  .fill.places-layout > .places-figs {
+    flex: 1 1 auto; height: auto; min-height: 280px;
+  }
+  .fill.places-layout > .places-card {
+    flex: 0 0 auto; padding: 8px 14px;
+  }
+
+
+  .fig-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    flex: 0 0 auto; height: 132px;
+  }
+  .fig-row.three { grid-template-columns: 1fr 1fr 1fr; }
+  /* 市區交通：左右字卡同高、景點圖同高 */
+  .slide[data-title="市區交通"] .fill.cols-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto 1fr;
+    gap: 10px;
+    align-items: stretch;
+  }
+  .slide[data-title="市區交通"] .fill.cols-2 > .stack { display: contents; }
+  .slide[data-title="市區交通"] .fill.cols-2 > .stack:first-child > .card {
+    grid-column: 1; grid-row: 1; height: 100%; align-self: stretch; flex: none !important;
+  }
+  .slide[data-title="市區交通"] .fill.cols-2 > .stack:last-child > .card {
+    grid-column: 2; grid-row: 1; height: 100%; align-self: stretch; flex: none !important;
+  }
+  .slide[data-title="市區交通"] .fill.cols-2 > .stack:first-child > .fig-row {
+    grid-column: 1; grid-row: 2; height: 100%; min-height: 220px; flex: none;
+  }
+  .slide[data-title="市區交通"] .fill.cols-2 > .stack:last-child > .fig-row {
+    grid-column: 2; grid-row: 2; height: 100%; min-height: 220px; flex: none;
+  }
+  /* 四日團套裝：含／不含卡縮小，景點圖放大 */
+  .slide[data-title="四日團套裝"] .feat-row .stack > .card { flex: 0 0 auto !important; }
+  .slide[data-title="四日團套裝"] .feat-row .stack > .fig-row {
+    flex: 1 1 auto; height: auto; min-height: 220px;
+  }
+  .slide[data-title="四日團套裝"] .feat-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  figure.fig {
+    margin: 0; border-radius: 10px; overflow: hidden; border: 1px solid var(--line);
+    position: relative; background: #0b151a; min-height: 0; height: 100%;
+  }
+  figure.fig img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  figure.fig figcaption {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    padding: 18px 10px 8px;
+    background: linear-gradient(transparent, rgba(8,14,18,.92));
+    color: var(--muted); font-size: 13.5px; line-height: 1.35;
+  }
+  figure.fig figcaption b {
+    display: block; color: #fff; font-size: 14.5px; margin-bottom: 2px; font-weight: 700;
+  }
+  .cover-strip figcaption, .cover-cap {
+    font-size: 13.5px; color: var(--muted); text-align: center; margin-top: 6px;
+  }
+  .map-note { font-size: 14px; color: var(--muted); margin: 4px 0 0; }
+  table { font-size: 16px; }
+  .callout { font-size: 15.5px; line-height: 1.45; padding: 8px 12px; }
+  .eyebrow { font-size: 14px; }
+  a.ov-day .d-title { font-size: 15px; }
+  a.ov-day .d-date { font-size: 13.5px; }
+  .pic-card .txt h3 { margin-top: 0; font-size: 17.5px; }
+  .pic-card .txt p { font-size: 16px; line-height: 1.45; color: var(--muted); margin: 0; }
+  .day-banner .cap strong { display: block; font-size: 21px; }
+  .day-banner .cap span { color: var(--muted); font-size: 15.5px; }
+  figure.fig figcaption { font-size: 14.5px; }
+  figure.fig figcaption b { font-size: 15.5px; }
+  .legend span { font-size: 13.5px; }
+  .mini { font-size: 14px; color: var(--muted); }
+  .nav button { font-size: 15px; }
+  .page { font-size: 13px; }
+  .ov-hint { font-size: 13.5px; }
+  .ov-arc .seg { font-size: 13.5px; }
+  .hero-photo > h1 { font-size: clamp(30px, 3.5vw, 48px); margin: 0 0 8px; }
+  .hero-photo > .lead { font-size: 17.5px; max-width: 920px; }
+  .hero.hero-photo-charyn .cover-strip,
+  .hero.hero-photo .cover-strip {
+    height: 300px;
+  }
+
+  .head-only { flex: 0 0 auto; }
+  .scroll-safe { overflow: hidden; }
+
+  @media screen and (max-width: 1100px) {
+    .slide { padding: 12px 16px 8px; }
+    .fill.cols-2, .feat-row, .grid-2 { grid-template-columns: 1fr; }
+    .ov-layout { grid-template-columns: 1fr; grid-template-rows: minmax(240px, 1fr) minmax(220px, auto); }
+    .ov-days { grid-template-columns: 1fr 1fr; grid-template-rows: repeat(5, minmax(40px, 1fr)); }
+  }
+
+  @page { size: 16in 9in; margin: 0; }
+  html.pdf-export, html.pdf-export body {
+    overflow: visible; height: auto; background: #0f1c24;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  html.pdf-export .nav { display: none !important; }
+  html.pdf-export .deck { height: auto; }
+  html.pdf-export .slide,
+  html.pdf-export .slide.active {
+    display: flex !important;
+    width: 16in; height: 9in;
+    padding: 18px 32px 16px;
+    overflow: hidden;
+    page-break-after: always;
+    break-after: page;
+    animation: none;
+  }
+  html.pdf-export .slide:last-of-type { page-break-after: auto; break-after: auto; }
+  html.pdf-export .ov-layout {
+    grid-template-columns: 1.15fr .85fr !important;
+    grid-template-rows: 1fr !important;
+  }
+  html.pdf-export .ov-days {
+    grid-template-columns: 1fr 1fr !important;
+    grid-template-rows: repeat(5, 1fr) !important;
+    grid-auto-flow: column;
+  }
+  html.pdf-export .fill.cols-2 { grid-template-columns: 1.05fr .95fr !important; }
+  html.pdf-export .grid-2 { grid-template-columns: 1fr 1fr !important; }
+  @media print {
+    html, body { overflow: visible; height: auto; background: #0f1c24; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .nav { display: none !important; }
+    .deck { height: auto; }
+    .slide {
+      display: flex !important;
+      width: 16in; height: 9in;
+      padding: 18px 32px 16px;
+      overflow: hidden;
+      page-break-after: always;
+      break-after: page;
+      animation: none;
+    }
+    .slide:last-of-type { page-break-after: auto; break-after: auto; }
+    .ov-layout {
+      grid-template-columns: 1.15fr .85fr !important;
+      grid-template-rows: 1fr !important;
+    }
+    .ov-days {
+      grid-template-columns: 1fr 1fr !important;
+      grid-template-rows: repeat(5, 1fr) !important;
+      grid-auto-flow: column;
+    }
+    .fill.cols-2 { grid-template-columns: 1.05fr .95fr !important; }
+    .grid-2 { grid-template-columns: 1fr 1fr !important; }
+  }
+
+  .hint-phone { display: none; }
+  a { color: var(--teal); }
+
+  .m-bar, .m-toc { display: none; }
+
+  html.mobile-read, html.mobile-read body {
+    height: auto; overflow: auto; overflow-x: hidden;
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+  }
+  html.mobile-read { scroll-behavior: smooth; }
+  html.mobile-read .hint-desk { display: none !important; }
+  html.mobile-read .hint-phone { display: block !important; }
+  html.mobile-read .nav { display: none !important; }
+  html.mobile-read .m-bar {
+    display: flex; position: fixed; top: 0; left: 0; right: 0; z-index: 4000;
+    height: 50px; align-items: center; gap: 8px;
+    padding: 0 10px; padding-top: env(safe-area-inset-top);
+    background: rgba(10,18,24,.96); backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  html.mobile-read .m-bar button, html.mobile-read .m-bar a {
+    background: #234853; color: var(--ink); border: 0; border-radius: 8px;
+    padding: 7px 10px; font-size: 14px; text-decoration: none; white-space: nowrap;
+  }
+  html.mobile-read .m-title {
+    flex: 1; min-width: 0; font-size: 14px; font-weight: 700;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  html.mobile-read .m-toc {
+    display: none; position: fixed; z-index: 3990;
+    top: calc(50px + env(safe-area-inset-top)); left: 0; right: 0; bottom: 0;
+    background: #0b151a; overflow: auto;
+    padding: 12px 14px calc(24px + env(safe-area-inset-bottom));
+  }
+  html.mobile-read .m-toc.open { display: block; }
+  html.mobile-read .m-toc a {
+    display: block; color: var(--ink); text-decoration: none;
+    padding: 12px 10px; border-bottom: 1px solid var(--line); font-size: 16px;
+  }
+  html.mobile-read .m-toc a span { color: var(--accent); font-size: 12px; margin-right: 8px; }
+  html.mobile-read .deck {
+    height: auto; padding: calc(58px + env(safe-area-inset-top)) 0 calc(20px + env(safe-area-inset-bottom));
+  }
+  html.mobile-read .slide,
+  html.mobile-read .slide.active {
+    display: flex !important;
+    flex-direction: column;
+    height: auto !important;
+    min-height: 0;
+    overflow: visible;
+    padding: 18px 14px 8px;
+    animation: none;
+    scroll-margin-top: calc(58px + env(safe-area-inset-top));
+  }
+  html.mobile-read .hero {
+    flex: none; min-height: 0; padding: 22px 16px 18px; border-radius: 12px;
+  }
+  html.mobile-read h1 { font-size: 30px; }
+  html.mobile-read h2 { font-size: 22px; }
+  html.mobile-read h3 { font-size: 17px; }
+  html.mobile-read .lead { font-size: 16px; }
+  html.mobile-read .card p, html.mobile-read .card li { font-size: 15.5px; }
+  html.mobile-read .fill,
+  html.mobile-read .fill.cols-2,
+  html.mobile-read .fill.cols-3,
+  html.mobile-read .fill.day-layout,
+  html.mobile-read .fill.places-layout,
+  html.mobile-read .feat-row,
+  html.mobile-read .grid-2,
+  html.mobile-read .grid-3,
+  html.mobile-read .two-col-tight,
+  html.mobile-read .ov-layout {
+    display: flex !important;
+    flex-direction: column;
+    height: auto !important;
+    min-height: 0;
+    gap: 10px;
+    grid-template-columns: none !important;
+    grid-template-rows: none !important;
+  }
+  html.mobile-read .stack { height: auto; }
+  html.mobile-read .slide[data-title="市區交通"] .fill.cols-2 > .stack { display: flex; }
+  html.mobile-read .slide[data-title="市區交通"] .fill.cols-2 > .stack > .card,
+  html.mobile-read .slide[data-title="市區交通"] .fill.cols-2 > .stack > .fig-row {
+    grid-column: auto; grid-row: auto; height: auto; min-height: 0;
+  }
+  html.mobile-read .day-main,
+  html.mobile-read .map-stack,
+  html.mobile-read .ov-map-wrap { height: auto; min-height: 0; }
+  html.mobile-read .card,
+  html.mobile-read .card.scroll-safe {
+    height: auto !important; overflow: visible;
+  }
+  html.mobile-read .card.scroll-safe .timeline {
+    display: block; flex: none;
+  }
+  html.mobile-read .timeline li {
+    grid-template-columns: 58px 1fr; padding: 10px 0; align-items: start;
+  }
+  html.mobile-read .t-time { font-size: 14px; }
+  html.mobile-read .t-body strong { font-size: 16px; }
+  html.mobile-read .t-body span { font-size: 14.5px; display: block; margin-top: 2px; }
+  html.mobile-read .t-body strong::after { content: none; }
+  html.mobile-read .map {
+    height: 240px !important; min-height: 240px !important; flex: none !important;
+  }
+  html.mobile-read .ov-map-wrap .map { height: 280px !important; }
+  html.mobile-read .day-banner { height: 150px; }
+  html.mobile-read .day-banner .cap strong { font-size: 18px; }
+  html.mobile-read .fig-row,
+  html.mobile-read .fig-row.three {
+    height: auto; min-height: 0; flex: none;
+    grid-template-columns: 1fr 1fr;
+  }
+  html.mobile-read .fig-row.three { grid-template-columns: 1fr; }
+  html.mobile-read figure.fig {
+    height: auto; min-height: 132px; aspect-ratio: 4 / 3;
+  }
+  html.mobile-read .pic-card { height: auto; }
+  html.mobile-read .pic-card .shot {
+    flex: none; min-height: 0; height: 160px; position: relative;
+  }
+  html.mobile-read .mosaic {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: none;
+    height: auto; flex: none;
+  }
+  html.mobile-read .mosaic .tile { height: 140px; }
+  html.mobile-read .mosaic .tile:first-child {
+    grid-row: auto; grid-column: 1 / -1; height: 200px;
+  }
+  html.mobile-read .feat-photo {
+    height: 220px; flex: none; position: relative;
+  }
+  html.mobile-read .cover-strip {
+    width: 100%; height: 220px; margin-top: 12px;
+  }
+  html.mobile-read .ov-days {
+    display: flex; flex-direction: column; height: auto; gap: 8px;
+    grid-template-columns: none; grid-auto-flow: row;
+  }
+  html.mobile-read a.ov-day {
+    grid-template-columns: 92px 1fr; height: auto; min-height: 76px;
+  }
+  html.mobile-read a.ov-day .thumb { width: 92px; height: 76px; }
+  html.mobile-read a.ov-day .d-title {
+    font-size: 15px; -webkit-line-clamp: 3; overflow: visible;
+    display: block;
+  }
+  html.mobile-read .place-grid { grid-template-columns: 1fr; font-size: 15px; overflow: visible; }
+  html.mobile-read table { font-size: 14px; display: block; overflow-x: auto; }
+  html.mobile-read .split-title { align-items: flex-start; }
+</style>
+</head>
+<body>
+<header class="m-bar">
+  <button type="button" id="tocBtn">目錄</button>
+  <div class="m-title">哈薩克十天九夜</div>
+  <a id="modeSwitch" href="哈薩克旅遊計畫.html">電腦版</a>
+</header>
+<nav class="m-toc" id="tocPanel"></nav>
+<div class="deck" id="deck">
+
+<!-- 0 -->
+<section class="slide active" data-title="封面">
+  <div class="hero hero-photo">
+    <div class="eyebrow">Almaty · Kazakhstan · 2026.09.25–10.04</div>
+    <h1>哈薩克十天九夜<br>旅遊計畫</h1>
+    <p class="lead">市區三日 → <strong>Premium 四日</strong> → 梅代烏（Medeu）→ 10/3 夜航 → <strong>天府（TFU）抵／雙流（CTU）起飛</strong> 回台。</p>
+    <div class="meta">
+      <div class="chip"><strong>9/25–9/28</strong>｜Resident Hotel Gogol</div>
+      <div class="chip"><strong>9/28–10/1</strong>｜Premium 四日團住宿</div>
+      <div class="chip"><strong>10/1–10/3</strong>｜Zumma Hotel</div>
+      <div class="chip"><strong>回程</strong>｜天府（TFU）抵 → 雙流（CTU）起飛</div>
+    </div>
+    <p class="mini hint-desk" style="margin-top:18px; flex:0 0 auto">← → 或空白鍵翻頁 · 圖片來源 Wikimedia Commons · <a href="哈薩克旅遊計畫-手機.html">手機閱讀版</a></p>
+    <p class="mini hint-phone" style="margin-top:18px; flex:0 0 auto">往下捲動閱讀 · 右上「目錄」跳日 · <a href="哈薩克旅遊計畫.html">電腦簡報版</a></p>
+  </div>
+</section>
+
+<!-- gallery -->
+<section class="slide" data-title="風景預覽">
+  <div class="head-only">
+    <div class="eyebrow">Visual Preview</div>
+    <h2>這趟會看到什麼</h2>
+  </div>
+  <div class="mosaic">
+    <div class="tile"><img loading="lazy" alt="Charyn" src="https://commons.wikimedia.org/wiki/Special:FilePath/Чарынский_каньон%2C_Долина_Замков_2.jpg?width=1000"><em>夏рын峽谷（Charyn）· 城堡谷</em></div>
+    <div class="tile"><img loading="lazy" alt="Kolsai" src="https://commons.wikimedia.org/wiki/Special:FilePath/Lower_Kolsay_Lake_in_April.jpg?width=700"><em>科爾賽湖（Kolsai）· 天山碧湖</em></div>
+    <div class="tile"><img loading="lazy" alt="Kaindy" src="https://commons.wikimedia.org/wiki/Special:FilePath/Kaindy_lake_south-east_Kazakhstan.jpg?width=700"><em>凱因迪湖（Kaindy）· 沉木奇景</em></div>
+    <div class="tile"><img loading="lazy" alt="BAL" src="https://commons.wikimedia.org/wiki/Special:FilePath/Большое_Алматинское_Озеро_%28БАО%29.jpg?width=700"><em>大阿拉木圖湖（Big Almaty Lake）· 約 2500m</em></div>
+    <div class="tile"><img loading="lazy" alt="Aktau" src="https://commons.wikimedia.org/wiki/Special:FilePath/Геологическая_порода_с_разноцветным_наслоением.jpg?width=700"><em>阿克套彩山（Aktau）· 阿爾滕埃梅爾（Altyn Emel）</em></div>
+  </div>
+</section>
+
+<!-- 哈薩克簡介 -->
+<section class="slide" data-title="哈薩克簡介">
+  <div class="split-title head-only">
+    <div>
+      <div class="eyebrow">Kazakhstan · Quick intro</div>
+      <h2>這趟會踩到的國家</h2>
+    </div>
+    <div class="day-badge">KZ</div>
+  </div>
+  <div class="feat-row" style="grid-template-columns:1.05fr .95fr">
+    <div class="feat-photo">
+      <img loading="lazy" alt="哈薩克草原" src="https://commons.wikimedia.org/wiki/Special:FilePath/Kazakhstan_steppe_Almaty_Province_(1).jpg?width=1200" onerror="this.src='https://commons.wikimedia.org/wiki/Special:FilePath/Чарынский_каньон%2C_Долина_Замков_2.jpg?width=1200'">
+      <div class="label"><b>哈薩克（Kazakhstan）</b>中亞 · 世界最大內陸國 · 本行程聚焦東南部阿拉木圖（Almaty）一帶</div>
+    </div>
+    <div class="stack" style="gap:8px">
+      <div class="card" style="flex:0 0 auto">
+        <span class="tag ok">國家速覽</span>
+        <ul>
+          <li><strong>位置</strong>：中亞，北接俄羅斯、東鄰中國新疆；首都阿斯塔納（Astana），本趟住<strong>舊都阿拉木圖（Almaty）</strong></li>
+          <li><strong>語言</strong>：哈薩克語＋俄語並用；旅遊場合俄語最實用，英語在飯店／團較通</li>
+          <li><strong>貨幣</strong>：堅戈（KZT）；時差 <strong>UTC+5</strong>（比台灣晚 3 小時）</li>
+          <li><strong>入境</strong>：台灣護照需事先申請 <strong>EVISA</strong>（電子簽證）</li>
+        </ul>
+      </div>
+      <div class="card" style="flex:0 0 auto">
+        <span class="tag route">為什麼來東南？</span>
+        <ul>
+          <li>阿拉木圖背靠<strong>天山（Tian Shan）</strong>，市區走路＋半日上山都方便</li>
+          <li>東部外圍有<strong>夏рын峽谷（Charyn）</strong>、<strong>科爾賽／凱因迪湖（Kolsai／Kaindy）</strong>、阿爾滕埃梅爾彩山——這趟 Premium 四日的主菜</li>
+          <li>城市名 Almaty 與「蘋果」同源：周邊曾是野生蘋果原產地之一</li>
+        </ul>
+      </div>
+      <div class="fig-row" style="flex:1;height:auto;min-height:140px">
+        <figure class="fig"><img loading="lazy" alt="阿拉木圖" src="https://commons.wikimedia.org/wiki/Special:FilePath/Zenkov_Cathedral%2C_Almaty.jpg?width=600"><figcaption><b>阿拉木圖（Almaty）</b>舊都與最大城；本趟市區基地</figcaption></figure>
+        <figure class="fig"><img loading="lazy" alt="夏рын" src="https://commons.wikimedia.org/wiki/Special:FilePath/Чарынский_каньон%2C_Долина_Замков_2.jpg?width=600"><figcaption><b>東南地景</b>峽谷、高山湖、草原彩山都在這一帶</figcaption></figure>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 總覽 -->
+<section class="slide" data-title="總覽" data-map="overview">
+  <div class="split-title head-only">
+    <div>
+      <div class="eyebrow">Overview · 點格子跳到該日</div>
+      <h2>十天路線一覽</h2>
+    </div>
+    <div class="day-badge">10D9N</div>
+  </div>
+  <div class="ov-arc">
+    <span class="seg city">市區</span><span class="arrow">→</span>
+    <span class="seg mtn">天山</span><span class="arrow">→</span>
+    <span class="seg tour">Premium 四日</span><span class="arrow">→</span>
+    <span class="seg mtn">梅代烏（Medeu）</span><span class="arrow">→</span>
+    <span class="seg fly">起飛 · 成都轉機</span>
+  </div>
+  <div class="ov-layout">
+    <div class="ov-map-wrap">
+      <div id="map-overview" class="map"></div>
+      <div class="ov-map-meta">
+        <div class="legend">
+          <span><i class="dot" style="background:#3aa6a0"></i>市區</span>
+          <span><i class="dot" style="background:#7ec87a"></i>山區</span>
+          <span><i class="dot" style="background:#d4a017"></i>四日團</span>
+          <span><i class="dot" style="background:#e07a5f"></i>機場</span>
+        </div>
+        <p class="ov-hint">圖下色點＝圖例分類｜點格子跳到該日</p>
+      </div>
+    </div>
+    <div class="ov-days">
+      <a class="ov-day" href="#9/25" data-goto="9/25"><div class="thumb"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/Green_Market%2C_Almaty_02.jpg?width=200"></div><div class="body"><div class="d-date">9/25 五</div><div class="d-title">抵達阿拉木圖（Almaty）</div><span class="ov-cat city">市區 · 抵達</span></div></a>
+      <a class="ov-day" href="#9/26" data-goto="9/26"><div class="thumb"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/Zenkov_Cathedral%2C_Almaty.jpg?width=200"></div><div class="body"><div class="d-date">9/26 六</div><div class="d-title">市集 · 曾科夫（Zenkov）· 科克托別（Kok Tobe）</div><span class="ov-cat city">市區</span></div></a>
+      <a class="ov-day" href="#9/27" data-goto="9/27"><div class="thumb"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/Большое_Алматинское_Озеро_%28БАО%29.jpg?width=200"></div><div class="body"><div class="d-date">9/27 日</div><div class="d-title">大阿拉木圖湖（Big Almaty Lake）</div><span class="ov-cat mtn">天山 · 山區</span></div></a>
+      <a class="ov-day" href="#9/28" data-goto="9/28"><div class="thumb"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/Маки_и_Черный_каньон_0328.jpg?width=200"></div><div class="body"><div class="d-date">9/28 一</div><div class="d-title">貝斯托別（Bestobe）· 巴爾托蓋（Bartogai）</div><span class="ov-cat tour">四日團 · 東部</span></div></a>
+      <a class="ov-day" href="#9/29" data-goto="9/29"><div class="thumb"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/Lower_Kolsay_Lake_in_April.jpg?width=200"></div><div class="body"><div class="d-date">9/29 二</div><div class="d-title">科爾賽（Kolsai）· 凱因迪（Kaindy）</div><span class="ov-cat tour">四日團 · 湖區</span></div></a>
+      <a class="ov-day" href="#9/30" data-goto="9/30"><div class="thumb"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/Чарынский_каньон%2C_Долина_Замков_2.jpg?width=200"></div><div class="body"><div class="d-date">9/30 三</div><div class="d-title">夏рын（Charyn）· 黑峽谷 · 月亮峽谷</div><span class="ov-cat tour">四日團 · 峽谷</span></div></a>
+      <a class="ov-day" href="#10/1" data-goto="10/1"><div class="thumb"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/Геологическая_порода_с_разноцветным_наслоением.jpg?width=200"></div><div class="body"><div class="d-date">10/1 四</div><div class="d-title">阿克套 · 卡圖套 · 歌唱沙丘 → Zumma</div><span class="ov-cat tour">四日團 · 國家公園</span></div></a>
+      <a class="ov-day" href="#10/2" data-goto="10/2"><div class="thumb"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/Medeu.jpg?width=200"></div><div class="body"><div class="d-date">10/2 五</div><div class="d-title">梅代烏（Medeu）· 辛布拉克（Shymbulak）</div><span class="ov-cat mtn">山區</span></div></a>
+      <a class="ov-day" href="#10/3" data-goto="10/3"><div class="thumb"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/WWII_Monument_Feat%2C_Almaty.jpg?width=200"></div><div class="body"><div class="d-date">10/3 六</div><div class="d-title">補貨 · 夜航 CA456</div><span class="ov-cat city">市區 · 出發</span></div></a>
+      <a class="ov-day" href="#10/4轉機" data-goto="10/4轉機"><div class="thumb"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/View_on_Kok-Tobe_from_Cenral_Park.jpg?width=200"></div><div class="body"><div class="d-date">10/4 日</div><div class="d-title">天府（TFU）→ 雙流（CTU）→ 桃園</div><span class="ov-cat fly">轉機</span></div></a>
+    </div>
+  </div>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-title="行前必讀">
+  <div class="split-title head-only">
+    <div><div class="eyebrow">Before you go</div><h2>簽證・健康・當地注意</h2></div>
+  </div>
+  <div class="fill cols-3">
+    <div class="pic-card">
+      <div class="shot"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/Park_of_the_28_Panfilov_Guardsmen_Almaty.jpg?width=800"></div>
+      <div class="txt"><span class="tag warn">簽證</span><h3>台灣護照</h3>
+        <p>出發前再核 <strong>EVISA</strong> 效期與姓名拼法；紙本＋手機各存一份。護照、簽證、機票三處姓名必須完全一致，否則可能無法登機或入境。</p></div>
+    </div>
+    <div class="pic-card">
+      <div class="shot"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/Большое_Алматинское_Озеро_%28БАО%29.jpg?width=800"></div>
+      <div class="txt"><span class="tag ok">健康</span><h3>高原與保險</h3>
+        <p>大阿拉木圖湖（Big Almaty Lake）約 <strong>2500m</strong>：上山慢走、多喝水，避免劇烈衝刺。旅平險務必含<strong>登山與飛行傘</strong>；山區自來水勿直接喝，買瓶裝水。</p></div>
+    </div>
+    <div class="pic-card">
+      <div class="shot"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/View_on_Kok-Tobe_from_Cenral_Park.jpg?width=800"></div>
+      <div class="txt"><span class="tag">當地</span><h3>溝通與網路</h3>
+        <p>俄語最通用。飯店與四日團人員英語多半通；市集、計程車仍以俄語為主。時差 <strong>UTC+5</strong>（比台灣晚 3 小時）。地圖用 <span class="name-en">2GIS</span> 比 Google 準；落地先辦本地 SIM，再開 <strong>Yandex Go</strong> 叫車。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-title="天氣匯率">
+  <div class="split-title head-only">
+    <div><div class="eyebrow">Climate & Money</div><h2>天氣・匯率・支付</h2></div>
+  </div>
+  <div class="fill cols-3">
+    <div class="pic-card">
+      <div class="shot"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/KazakstanMountainsKalvisVitolins.JPG?width=800"></div>
+      <div class="txt"><h3>氣溫（9 月底）</h3>
+        <p>市區白天約 17–24°C、夜晚 5–12°C；山區／峽谷風大可近 0°C。建議<strong>薄長袖＋外套層次穿</strong>，再加一件<strong>防風外套（薄殼）</strong>擋山風；日照強，墨鏡與防曬不可少。</p></div>
+    </div>
+    <div class="pic-card">
+      <div class="shot"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/Green_Market%2C_Almaty_02.jpg?width=800"></div>
+      <div class="txt"><h3>匯率與換匯</h3>
+        <p>約 <span class="price">1 KZT ≈ 0.065 TWD</span>（1 萬堅戈 ≈ 650 台幣）。機場或市區 <strong>Mig／МиГ</strong> 用美金換最穩。飛行傘約 37,000 KZT（≈2,431 台幣）。插座 Type C/F、220V。</p></div>
+    </div>
+    <div class="pic-card">
+      <div class="shot"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/WWII_Monument_Feat%2C_Almaty.jpg?width=800"></div>
+      <div class="txt"><h3>支付</h3>
+        <p>市區餐廳、商場多可刷 Visa／Mastercard；市集、公園生態費、山區小店常只收<strong>堅戈現金</strong>。建議落地先換一小筆，再留美金備援換匯。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-title="交通通訊">
+  <div class="split-title head-only">
+    <div>
+      <div class="eyebrow">Getting around</div>
+      <h2>住宿區段與機場</h2>
+    </div>
+  </div>
+  <div class="fill cols-3">
+    <div class="pic-card"><div class="shot"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/Zenkov_Cathedral%2C_Almaty.jpg?width=500"></div><div class="txt"><h3>住哪（三段）</h3><p><strong>9/25–28</strong> Gogol（市區前段）<br><strong>9/28–10/1</strong> Premium 團住（東部）<br><strong>10/1–3</strong> Zumma（市區後段，近梅代烏 Medeu）</p></div></div>
+    <div class="pic-card"><div class="shot"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/View_on_Kok-Tobe_from_Cenral_Park.jpg?width=500"></div><div class="txt"><h3>怎麼走</h3><p>市區景點以<strong>步行＋捷運</strong>為主；機場、夜歸、梅代烏（Medeu）、行李多改叫 <strong>Yandex</strong>。離線地圖用 <strong>2GIS</strong>（比 Google 準）。</p></div></div>
+    <div class="pic-card"><div class="shot"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/Medeu.jpg?width=500"></div><div class="txt"><h3>回程要點</h3><p><strong>10/3 23:25</strong> CA456 ALA→天府 <strong>TFU</strong>（次日 06:30 抵）；<strong>CA417</strong> 雙流 <strong>CTU 13:30</strong>→桃園 <strong>16:55</strong>。<strong>行李不直掛</strong>；訂位 PCRVL7。</p></div></div>
+  </div>
+</section>
+
+<!-- 市區交通 -->
+<section class="slide" data-title="市區交通">
+  <div class="split-title head-only">
+    <div><div class="eyebrow">City transport</div><h2>步行／捷運／叫車</h2></div>
+  </div>
+  <div class="fill cols-2">
+    <div class="stack">
+      <div class="card" style="flex:0 0 auto">
+        <span class="tag ok">原則</span>
+        <ul>
+          <li><strong>Gogol 周邊</strong>：綠色市集（Green Bazaar）、曾科夫大教堂（Zenkov）、絲路步行街（Zhibek Zholy）都在 10–15 分步行圈，優先走路</li>
+          <li><strong>捷運</strong>：市區南北快線；建議走 2–3 段美站（阿拜 Abay／絲路 Zhibek／拜科努爾 Baikonur）</li>
+          <li><strong>Yandex Go</strong>：機場、夜歸、梅代烏（Medeu）、行李多時用；核對車牌再上車</li>
+          <li><strong>ONAY 卡</strong>：捷運與公車通用實體卡，市集／捷運站可買</li>
+        </ul>
+        <div class="callout"><strong>捷運到不了：</strong>機場 ALA、科克托別（Kok Tobe）纜車下站、梅代烏（Medeu）／辛布拉克（Shymbulak）、以及四日團所有景點。</div>
+      </div>
+      <div class="fig-row"><figure class="fig"><img loading="lazy" alt="科克托別" src="https://commons.wikimedia.org/wiki/Special:FilePath/View_on_Kok-Tobe_from_Cenral_Park.jpg?width=700"><figcaption><b>科克托別（Kok Tobe）</b>捷運到 Abay 後再走 12–15 分；纜車上看夜景</figcaption></figure><figure class="fig"><img loading="lazy" alt="綠色市集" src="https://commons.wikimedia.org/wiki/Special:FilePath/Green_Market%2C_Almaty_02.jpg?width=700"><figcaption><b>綠色市集（Green Bazaar）</b>從 Gogol 步行約 12–15 分即可到達</figcaption></figure></div>
+    </div>
+    <div class="stack">
+      <div class="card" style="flex:0 0 auto">
+        <h3>預估時間（單程）</h3>
+        <table>
+          <tr><td>機場 ALA ↔ Gogol／Zumma</td><td><strong>30–45 分</strong> Yandex</td></tr>
+          <tr><td>Gogol ↔ 市集／曾科夫（Zenkov）</td><td><strong>10–15 分</strong> 步行</td></tr>
+          <tr><td>Zhibek → 阿拜 Abay</td><td><strong>5–7 分</strong> 捷運</td></tr>
+          <tr><td>阿拜 Abay → 科克托別纜車（Kok Tobe）</td><td><strong>12–15 分</strong> 步行</td></tr>
+          <tr><td>Zumma → 梅代烏（Medeu）</td><td><strong>25–40 分</strong> Yandex</td></tr>
+        </table>
+        <p class="mini" style="margin-top:8px">美站：阿拜 Abay（馬賽克）、絲路 Zhibek Zholy、拜科努爾 Baikonur（航天）。</p>
+      </div>
+      <div class="fig-row"><figure class="fig"><img loading="lazy" alt="潘菲洛夫公園" src="https://commons.wikimedia.org/wiki/Special:FilePath/WWII_Monument_Feat%2C_Almaty.jpg?width=700"><figcaption><b>潘菲洛夫公園（Panfilov）</b>捷運 Zhibek 站步行可達；木教堂就在園內</figcaption></figure><figure class="fig"><img loading="lazy" alt="曾科夫大教堂" src="https://commons.wikimedia.org/wiki/Special:FilePath/Zenkov_Cathedral%2C_Almaty.jpg?width=700"><figcaption><b>曾科夫大教堂（Zenkov）</b>曾科夫木教堂；Gogol 周邊 10–15 分可走完</figcaption></figure></div>
+    </div>
+  </div>
+</section>
+
+<!-- 住宿總表 -->
+<section class="slide" data-title="住宿總表">
+  <div class="split-title head-only">
+    <div>
+      <div class="eyebrow">Stays</div>
+      <h2>住宿一覽</h2>
+    </div>
+  </div>
+  <div class="fill cols-3">
+    <div class="pic-card"><div class="shot"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/Zenkov_Cathedral%2C_Almaty.jpg?width=500"></div><div class="txt"><span class="tag ok">9/25–28</span><h3>Resident Hotel Gogol（果戈里街）</h3><p>果戈里街 129（Gogolya 129），近曾科夫（Zenkov）與綠色市集。<strong>含早餐</strong>；入住 14:00、晚退至 <strong>9/28 13:00</strong>。電話 +7 777 175-8787</p></div></div>
+    <div class="pic-card"><div class="shot"><img loading="lazy" alt="" src="住宿/4-day tour/IMG-20260918-WA0004.jpg" onerror="this.src='https://commons.wikimedia.org/wiki/Special:FilePath/Lower_Kolsay_Lake_in_April.jpg?width=500'"></div><div class="txt"><span class="tag route">9/28–10/1</span><h3>Premium 團住（Saty／峽谷）</h3><p>9/28–29 住薩特村（Saty，湖區）；9/30 改住夏рын（Charyn）附近。<strong>每日只含早餐</strong>，午晚自理（可請導遊推薦）。</p></div></div>
+    <div class="pic-card"><div class="shot"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/Medeu.jpg?width=500"></div><div class="txt"><span class="tag">10/1–3</span><h3>Zumma Hotel（Radlova）</h3><p>Radlova 17，離梅代烏（Medeu）較近、方便 10/2 上山。入住 <strong>10/1 14:00</strong>、退房 <strong>10/3 12:00</strong>；電話 +7 700 460 5050</p></div></div>
+  </div>
+</section>
+
+<!-- Premium Package -->
+<section class="slide" data-title="四日團套裝">
+  <div class="split-title head-only">
+    <div>
+      <div class="eyebrow">Premium Package</div>
+      <h2>含什麼／不含什麼</h2>
+    </div>
+  </div>
+  <div class="feat-row">
+    <div class="feat-photo">
+      <img loading="lazy" alt="" src="住宿/4-day tour/IMG-20260918-WA0000.jpg" onerror="this.src='https://commons.wikimedia.org/wiki/Special:FilePath/Чарынский_каньон%2C_Долина_Замков_2.jpg?width=1000'">
+      <div class="label"><b>Off-grid 4D3N</b>Nature · Landscapes · Adventure</div>
+    </div>
+    <div class="stack">
+      <div class="card" style="flex:0 0 auto"><span class="tag ok">含（團已付）</span><ul>
+        <li>國家公園／景點門票、私人車、英語司機＋導遊</li>
+        <li>旅程攝影＋無人機；凱因迪越野、夏рын園區交通</li>
+        <li>機場接送、Premium 景觀住宿＋<strong>每日早餐</strong></li>
+      </ul></div>
+      <div class="card" style="flex:0 0 auto"><span class="tag warn">不含（自備）</span><ul>
+        <li><strong>午餐、晚餐</strong>（最容易漏記，請預留現金）</li>
+        <li>國際機票、旅平險、騎馬／獵鷹等自選活動</li>
+        <li>個人開支；提早或延後退房另計</li>
+      </ul></div>
+      <div class="fig-row"><figure class="fig"><img loading="lazy" alt="科爾賽湖" src="https://commons.wikimedia.org/wiki/Special:FilePath/Lower_Kolsay_Lake_in_April.jpg?width=600"><figcaption><b>科爾賽湖（Kolsai）</b>套裝第 2 天：雙湖日主景</figcaption></figure><figure class="fig"><img loading="lazy" alt="夏рын峽谷" src="https://commons.wikimedia.org/wiki/Special:FilePath/Чарынский_каньон%2C_Долина_Замков_2.jpg?width=600"><figcaption><b>夏рын峽谷（Charyn）</b>套裝第 3 天：城堡谷岩柱</figcaption></figure></div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-title="9/25" data-map="d25">
+  <div class="day-banner">
+    <img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/View_on_Kok-Tobe_from_Cenral_Park.jpg?width=1400">
+    <div class="cap"><strong>9/25（五）抵達 · 市區</strong><span>CA186 TPE 13:00→PEK 16:30｜CA799 17:35→ALA 20:40｜入住 Gogol</span></div>
+  </div>
+  <div class="fill day-layout">
+    <div class="day-main">
+      <div class="card scroll-safe">
+      <ul class="timeline">
+        <li><div class="t-time">13:00</div><div class="t-body"><strong>桃園（TPE）T2 起飛</strong><span>CA186 → 北京首都 PEK T3，約 16:30 抵；行李可直掛到 ALA</span></div></li>
+        <li><div class="t-time">17:35</div><div class="t-body"><strong>北京（PEK）T3 起飛</strong><span>CA799 → 阿拉木圖 ALA T2；T3 轉機約 1 小時</span></div></li>
+        <li><div class="t-time">20:40</div><div class="t-body"><strong>抵阿拉木圖機場（ALA）T2</strong><span>出關後先辦 SIM、小額換堅戈（機場或隔日 Mig）</span></div></li>
+        <li><div class="t-time">21:00+</div><div class="t-body"><strong>Yandex → Gogol 飯店</strong><span>約 30–45 分；地址 Gogolya 129</span></div></li>
+        <li><div class="t-time">晚</div><div class="t-body"><strong>早睡／Chad Cafe</strong><span>同街簡易餐（Gogolya 13）；抵達晚則直接休息</span></div></li>
+      </ul>
+      <div class="callout"><strong>叫車：</strong>出關後勿跟黃牛；用 Yandex 核對車牌與司機再上車。</div>
+    </div>
+      <div class="fig-row"><figure class="fig"><img loading="lazy" alt="曾科夫大教堂" src="https://commons.wikimedia.org/wiki/Special:FilePath/Zenkov_Cathedral%2C_Almaty.jpg?width=700"><figcaption><b>曾科夫大教堂（Zenkov）</b>全木結構地標；飯店走路可到，隔天市區動線起點</figcaption></figure><figure class="fig"><img loading="lazy" alt="綠色市集一帶" src="https://commons.wikimedia.org/wiki/Special:FilePath/Green_Market%2C_Almaty_02.jpg?width=700"><figcaption><b>綠色市集（Green Bazaar）一帶</b>乾果香料與小吃；Gogol 步行約 12–15 分</figcaption></figure></div>
+    </div>
+    <div class="stack map-stack">
+      <div id="map-d25" class="map"></div>
+      <p class="map-note">機場 ALA → Resident Hotel Gogol</p>
+    </div>
+  </div>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-title="9/26" data-map="d26">
+  <div class="day-banner">
+    <img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/Zenkov_Cathedral%2C_Almaty.jpg?width=1400">
+    <div class="cap"><strong>9/26（六）市區</strong><span>綠色市集（Green Bazaar）→ 曾科夫（Zenkov）→ 捷運 → 科克托別（Kok Tobe）</span></div>
+  </div>
+  <div class="fill day-layout">
+    <div class="day-main">
+      <div class="card scroll-safe">
+      <ul class="timeline">
+        <li><div class="t-time">09:30</div><div class="t-body"><strong>綠色市集（Green Bazaar）</strong><span>飯店步行 12–15 分；可順買 ONAY 交通卡</span></div></li>
+        <li><div class="t-time">11:30</div><div class="t-body"><strong>Auyl Cafe（Ауыл）午</strong><span>市集旁 3–5 分；在地食堂、逛完直接吃</span></div></li>
+        <li><div class="t-time">13:00</div><div class="t-body"><strong>潘菲洛夫公園＋曾科夫大教堂（Zenkov）</strong><span>再走 10–12 分；進堂請脫帽安靜</span></div></li>
+        <li><div class="t-time">14:30</div><div class="t-body"><strong>絲路步行街（Zhibek Zholy）</strong><span>往 Zhibek 站方向再走 8–12 分後進站</span></div></li>
+        <li><div class="t-time">16:00</div><div class="t-body"><strong>捷運 → 阿拜站（Abay）</strong><span>約 5–7 分；可選旁 Navat 中亞菜</span></div></li>
+        <li><div class="t-time">17:30</div><div class="t-body"><strong>科克托別纜車（Kok Tobe）</strong><span>Abay 出站再走 12–15 分上坡到纜車</span></div></li>
+        <li><div class="t-time">19:30</div><div class="t-body"><strong>回 Gogol 飯店</strong><span>下山後 Yandex 約 15–20 分（夜歸較穩）</span></div></li>
+      </ul>
+    </div>
+      <div class="fig-row"><figure class="fig"><img loading="lazy" alt="綠色市集" src="https://commons.wikimedia.org/wiki/Special:FilePath/Green_Market%2C_Almaty_02.jpg?width=700"><figcaption><b>綠色市集（Green Bazaar）</b>乾果、香料與伴手禮；午餐就在旁 Auyl Cafe</figcaption></figure><figure class="fig"><img loading="lazy" alt="科克托別" src="https://commons.wikimedia.org/wiki/Special:FilePath/View_on_Kok-Tobe_from_Cenral_Park.jpg?width=700"><figcaption><b>科克托別（Kok Tobe）</b>傍晚搭纜車上山，看天山與市區燈火</figcaption></figure></div>
+    </div>
+    <div class="stack map-stack">
+      <div id="map-d26" class="map"></div>
+      <p class="map-note">市集／曾科夫 → 捷運 → 科克托別（Kok Tobe）→ 叫車回</p>
+    </div>
+  </div>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-title="9/27" data-map="d27">
+  <div class="day-banner">
+    <img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/Большое_Алматинское_Озеро_%28БАО%29.jpg?width=1400">
+    <div class="cap"><strong>9/27（日）天山 · 山區</strong><span>霍比特人瀑布 → 大阿拉木圖湖（BAL）；時間夠再加阿爾馬阿拉桑（Alma-Arasan）</span></div>
+  </div>
+  <div class="fill day-layout">
+    <div class="day-main">
+      <div class="card scroll-safe">
+      <ul class="timeline">
+        <li><div class="t-time">1</div><div class="t-body"><strong>霍比特人瀑布（Hobbit／Ayusai）</strong><span>與大湖同谷，先暖身拍照、適應海拔</span></div></li>
+        <li><div class="t-time">2</div><div class="t-body"><strong>大阿拉木圖湖（Big Almaty Lake）</strong><span>約 2500m；帶防風外套與足夠飲水</span></div></li>
+        <li><div class="t-time">3</div><div class="t-body"><strong>阿爾馬阿拉桑（Alma-Arasan）</strong><span>另一條谷；時間不夠可請司機略過</span></div></li>
+        <li><div class="t-time">晚</div><div class="t-body"><strong>Chad Cafe（同街）</strong><span>回 Gogol 同街 Chad Cafe 收尾；明日 13:00 退房接團</span></div></li>
+      </ul>
+      <div class="callout"><strong>跟業者說：</strong>霍比特人瀑布＋大阿拉木圖湖（BAL）同谷連走最順；阿爾馬阿拉桑（Alma-Arasan）放最後、時間不夠可砍。</div>
+    </div>
+      <div class="fig-row"><figure class="fig"><img loading="lazy" alt="大阿拉木圖湖" src="https://commons.wikimedia.org/wiki/Special:FilePath/Большое_Алматинское_Озеро_%28БАО%29.jpg?width=700"><figcaption><b>大阿拉木圖湖（Big Almaty Lake）</b>海拔約 2500m，湖色隨天氣變化；慢走多喝水</figcaption></figure><figure class="fig"><img loading="lazy" alt="天山峽谷氛圍" src="https://commons.wikimedia.org/wiki/Special:FilePath/KazakstanMountainsKalvisVitolins.JPG?width=700"><figcaption><b>天山峽谷（Tian Shan）氛圍</b>風大溫差大；防風外套與登山鞋必備</figcaption></figure></div>
+    </div>
+    <div class="stack map-stack">
+      <div id="map-d27" class="map"></div>
+      <p class="map-note">大阿拉木圖湖（BAL）南郊一日；跟團／私人司機</p>
+    </div>
+  </div>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-title="四日團說明" data-map="tour4">
+  <div class="day-banner">
+    <img loading="lazy" alt="" src="住宿/4-day tour/IMG-20260918-WA0000.jpg" onerror="this.src='https://commons.wikimedia.org/wiki/Special:FilePath/Чарынский_каньон%2C_Долина_Замков_2.jpg?width=1400'">
+    <div class="cap"><strong>9/28–10/1 Premium 4D3N</strong><span>跟官方日序走｜勿自行改日｜住宿只含早餐</span></div>
+  </div>
+  <div class="fill day-layout">
+    <div class="day-main">
+      <div class="card scroll-safe">
+      <ol style="color:var(--muted); line-height:1.75; padding-left:18px; margin:0; font-size:15px">
+        <li><strong style="color:var(--ink)">D1 9/28</strong> 貝斯托別山脈（Bestobe）＋巴爾托蓋水庫（Bartogai）→ 住薩特村（Saty）</li>
+        <li><strong style="color:var(--ink)">D2 9/29</strong> 科爾賽湖（Kolsai）＋凱因迪湖（Kaindy，含越野）→ 續住薩特村（Saty）</li>
+        <li><strong style="color:var(--ink)">D3 9/30</strong> 夏рын峽谷（Charyn）＋黑峽谷（Black）＋月亮峽谷（Moon）</li>
+        <li><strong style="color:var(--ink)">D4 10/1</strong> 阿爾滕埃梅爾（Altyn Emel）：阿克套（Aktau）＋卡圖套（Katutau）＋歌唱沙丘（Singing Dune）→ Zumma</li>
+      </ol>
+      <div class="callout"><strong>自備：</strong>午晚現金預算、防風外套、行動電源；官方日序勿自行對調。</div>
+    </div>
+      <div class="fig-row"><figure class="fig"><img loading="lazy" alt="科爾賽湖" src="https://commons.wikimedia.org/wiki/Special:FilePath/Lower_Kolsay_Lake_in_April.jpg?width=700"><figcaption><b>科爾賽湖（Kolsai）</b>D2 主景：松林三連湖，通常先打下湖</figcaption></figure><figure class="fig"><img loading="lazy" alt="夏рын峽谷" src="https://commons.wikimedia.org/wiki/Special:FilePath/Чарынский_каньон%2C_Долина_Замков_2.jpg?width=700"><figcaption><b>夏рын峽谷（Charyn）</b>D3 主景：城堡谷岩柱，哈薩克版小大峽谷</figcaption></figure></div>
+    </div>
+    <div class="stack map-stack">
+      <div id="map-tour4" class="map"></div>
+      <p class="map-note">Premium 官方日序：東部→湖→峽谷→國家公園</p>
+    </div>
+  </div>
+</section>
+
+<!-- 9 -->
+<section class="slide" data-title="9/28" data-map="d28">
+  <div class="day-banner">
+    <img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/Kazakhstan_steppe_Almaty_Province_(1).jpg?width=1400">
+    <div class="cap"><strong>9/28（一）四日團 · 東部</strong><span>Gogol 退 → 貝斯托別（Bestobe）＋巴爾托蓋（Bartogai）→ 薩特村（Saty）</span></div>
+  </div>
+  <div class="fill day-layout">
+    <div class="day-main">
+      <div class="card scroll-safe">
+      <ul class="timeline">
+        <li><div class="t-time">～13:00</div><div class="t-body"><strong>Gogol 飯店退房</strong><span>行李交團車；約下午出發往東部</span></div></li>
+        <li><div class="t-time">午</div><div class="t-body"><strong>貝斯托別岩丘（Bestobe）</strong><span>草原岩丘地景（Bestobe／Sogety 一帶）</span></div></li>
+        <li><div class="t-time">下午</div><div class="t-body"><strong>巴爾托蓋水庫（Bartogai）</strong><span>環湖山景休息站，補水拍照</span></div></li>
+        <li><div class="t-time">晚</div><div class="t-body"><strong>薩特村 Premium（Saty）</strong><span>湖區住宿；只含早餐，午晚自理</span></div></li>
+      </ul>
+    </div>
+      <div class="fig-row"><figure class="fig"><img loading="lazy" alt="東部草原岩丘" src="https://commons.wikimedia.org/wiki/Special:FilePath/Kazakhstan_steppe_Almaty_Province_(1).jpg?width=700"><figcaption><b>東部草原岩丘（Bestobe 一帶）</b>往湖區路上的第一印象地景</figcaption></figure><figure class="fig"><img loading="lazy" alt="巴爾托蓋水庫" src="https://commons.wikimedia.org/wiki/Special:FilePath/Kazakhstan_steppe_Almaty_Province_(2).jpg?width=700"><figcaption><b>巴爾托蓋水庫（Bartogai）</b>途中休息點；環湖山景好拍</figcaption></figure></div>
+    </div>
+    <div class="stack map-stack">
+      <div id="map-d28" class="map"></div>
+      <p class="map-note">Gogol → Bestobe → Bartogai → 薩特村（Saty）</p>
+    </div>
+  </div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-title="9/29" data-map="d29">
+  <div class="day-banner">
+    <img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/Kaindy_lake_south-east_Kazakhstan.jpg?width=1400">
+    <div class="cap"><strong>9/29（二）四日團 · 湖區</strong><span>科爾賽（Kolsai）＋凱因迪（Kaindy，含越野）→ 續住薩特村（Saty）</span></div>
+  </div>
+  <div class="fill day-layout">
+    <div class="day-main">
+      <div class="card scroll-safe">
+      <ul class="timeline">
+        <li><div class="t-time">上午</div><div class="t-body"><strong>科爾賽下湖（Kolsai）</strong><span>松林碧湖；中湖視體力與時間再走</span></div></li>
+        <li><div class="t-time">下午</div><div class="t-body"><strong>凱因迪沉木湖（Kaindy）</strong><span>水中直立雲杉；團已含越野車接駁</span></div></li>
+        <li><div class="t-time">晚</div><div class="t-body"><strong>薩特村（Saty）</strong><span>湖區濕涼；建議防水鞋＋薄外套</span></div></li>
+      </ul>
+    </div>
+      <div class="fig-row"><figure class="fig"><img loading="lazy" alt="科爾賽湖" src="https://commons.wikimedia.org/wiki/Special:FilePath/Lower_Kolsay_Lake_in_April.jpg?width=700"><figcaption><b>科爾賽湖（Kolsai）</b>三連湖中最容易抵達的下湖，松林環繞</figcaption></figure><figure class="fig"><img loading="lazy" alt="凱因迪沉木湖" src="https://commons.wikimedia.org/wiki/Special:FilePath/Kaindy_lake_south-east_Kazakhstan.jpg?width=700"><figcaption><b>凱因迪沉木湖（Kaindy）</b>地震後沉水的雲杉；需越野車（團含）</figcaption></figure></div>
+    </div>
+    <div class="stack map-stack">
+      <div id="map-d29" class="map"></div>
+      <p class="map-note">薩特村（Saty）南方：科爾賽＋凱因迪</p>
+    </div>
+  </div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-title="9/30" data-map="d30">
+  <div class="day-banner">
+    <img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/Чарынский_каньон%2C_Долина_Замков_2.jpg?width=1400">
+    <div class="cap"><strong>9/30（三）四日團 · 峽谷</strong><span>夏рын（Charyn）· 黑峽谷（Black）· 月亮峽谷（Moon）</span></div>
+  </div>
+  <div class="fill day-layout">
+    <div class="day-main">
+      <div class="card scroll-safe">
+      <ul class="timeline">
+        <li><div class="t-time">1</div><div class="t-body"><strong>夏рын城堡谷（Charyn）</strong><span>紅橙岩柱；觀景台／下谷，園區接駁團含</span></div></li>
+        <li><div class="t-time">2</div><div class="t-body"><strong>黑峽谷（Black Canyon）</strong><span>岩色更深、線條更銳，補拍不同氛圍</span></div></li>
+        <li><div class="t-time">3</div><div class="t-body"><strong>月亮／黃峽谷（Moon／Yellow）</strong><span>視體力與日照，聽導遊決定去留</span></div></li>
+        <li><div class="t-time">晚</div><div class="t-body"><strong>峽谷附近住</strong><span>團安排當地住宿；仍只含早餐</span></div></li>
+      </ul>
+    </div>
+      <div class="fig-row"><figure class="fig"><img loading="lazy" alt="夏рын城堡谷" src="https://commons.wikimedia.org/wiki/Special:FilePath/Чарынский_каньон%2C_Долина_Замков_2.jpg?width=700"><figcaption><b>夏рын城堡谷（Charyn）</b>紅橙岩柱群，常被比作迷你大峽谷</figcaption></figure><figure class="fig"><img loading="lazy" alt="黑峽谷一帶" src="https://commons.wikimedia.org/wiki/Special:FilePath/Маки_и_Черный_каньон_0328.jpg?width=700"><figcaption><b>黑峽谷（Black Canyon）一帶</b>岩色更深、陰影更強，適合對比拍攝</figcaption></figure></div>
+    </div>
+    <div class="stack map-stack">
+      <div id="map-d30" class="map"></div>
+      <p class="map-note">夏рын（Charyn）三峽谷近距連訪</p>
+    </div>
+  </div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-title="10/1" data-map="d01">
+  <div class="day-banner">
+    <img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/Геологическая_порода_с_разноцветным_наслоением.jpg?width=1400">
+    <div class="cap"><strong>10/1（四）四日團 · 國家公園</strong><span>阿爾滕埃梅爾（Altyn Emel）：阿克套 · 卡圖套 · 歌唱沙丘 → Zumma</span></div>
+  </div>
+  <div class="fill day-layout">
+    <div class="day-main">
+      <div class="card scroll-safe">
+      <ul class="timeline">
+        <li><div class="t-time">①</div><div class="t-body"><strong>阿克套彩山（Aktau）</strong><span>粉彩層理像火星；墨鏡與防曬必備</span></div></li>
+        <li><div class="t-time">②</div><div class="t-body"><strong>卡圖套（Katutau）</strong><span>火山岩質感地景；順序聽司機安排</span></div></li>
+        <li><div class="t-time">③</div><div class="t-body"><strong>歌唱沙丘（Singing Dune）</strong><span>草原中突兀大沙丘；風況好時可聞沙鳴</span></div></li>
+        <li><div class="t-time">晚</div><div class="t-body"><strong>Zumma＋Paradise（同街）</strong><span>回城入住 Zumma；同街 Paradise 就近吃</span></div></li>
+      </ul>
+    </div>
+      <div class="fig-row"><figure class="fig"><img loading="lazy" alt="阿克套彩山" src="https://commons.wikimedia.org/wiki/Special:FilePath/Геологическая_порода_с_разноцветным_наслоением.jpg?width=700"><figcaption><b>阿克套彩山（Aktau）</b>粉紅／黃層理，曠野感很強、防曬要足</figcaption></figure><figure class="fig"><img loading="lazy" alt="歌唱沙丘" src="https://commons.wikimedia.org/wiki/Special:FilePath/Алтын_Эмиль%2C_глаз_Пустыни.jpg?width=700"><figcaption><b>歌唱沙丘（Singing Dune）</b>草原中突然出現的大沙丘，風大時會發聲</figcaption></figure></div>
+    </div>
+    <div class="stack map-stack">
+      <div id="map-d01" class="map"></div>
+      <p class="map-note">阿爾滕埃梅爾國家公園（Altyn Emel）→ 回城 Zumma</p>
+    </div>
+  </div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-title="10/2" data-map="d02">
+  <div class="day-banner">
+    <img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/Medeu.jpg?width=1400">
+    <div class="cap"><strong>10/2（五）山區 · 梅代烏</strong><span>梅代烏（Medeu）→ 辛布拉克（Shymbulak）纜車／飛行傘｜今天沒班機</span></div>
+  </div>
+  <div class="fill day-layout">
+    <div class="day-main">
+      <div class="card scroll-safe">
+      <ul class="timeline">
+        <li><div class="t-time">08:30</div><div class="t-body"><strong>Yandex → 梅代烏（Medeu）</strong><span>從 Zumma 約 25–40 分；無班機壓力</span></div></li>
+        <li><div class="t-time">上午</div><div class="t-body"><strong>辛布拉克纜車（Shymbulak）</strong><span>上山風大，外套必帶；可先觀景再決定飛行傘</span></div></li>
+        <li><div class="t-time">10:30+</div><div class="t-body"><strong>飛行傘</strong><span>約 37,000 KZT；看風況，不安全可不飛</span></div></li>
+        <li><div class="t-time">午</div><div class="t-body"><strong>Del Papa（梅代烏義式）</strong><span>梅代烏義式；飛行傘空檔好點</span></div></li>
+        <li><div class="t-time">晚</div><div class="t-body"><strong>AUYL 山區店（≠市集 Auyl）</strong><span>7 人請訂；≠綠色市集旁的 Auyl Cafe</span></div></li>
+      </ul>
+    </div>
+      <div class="fig-row"><figure class="fig"><img loading="lazy" alt="梅代烏滑冰場" src="https://commons.wikimedia.org/wiki/Special:FilePath/Medeu.jpg?width=700"><figcaption><b>梅代烏滑冰場（Medeu）</b>市區往天山最近入口；纜車由此續上</figcaption></figure><figure class="fig"><img loading="lazy" alt="辛布拉克山區" src="https://commons.wikimedia.org/wiki/Special:FilePath/KazakstanMountainsKalvisVitolins.JPG?width=700"><figcaption><b>辛布拉克山區（Shymbulak）</b>纜車觀景與飛行傘常見起飛區</figcaption></figure></div>
+    </div>
+    <div class="stack map-stack">
+      <div id="map-d02" class="map"></div>
+      <p class="map-note">起飛是 10/3；今天專心梅代烏（Medeu）</p>
+    </div>
+  </div>
+</section>
+
+<!-- 10/3 -->
+<section class="slide" data-title="10/3" data-map="d03">
+  <div class="day-banner">
+    <img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/WWII_Monument_Feat%2C_Almaty.jpg?width=1400">
+    <div class="cap"><strong>10/3（六）市區 · 出發</strong><span>Zumma 12:00 退房｜CA456 ALA T2 23:25 → TFU T1 次日 06:30</span></div>
+  </div>
+  <div class="fill day-layout">
+    <div class="day-main">
+      <div class="card scroll-safe">
+      <ul class="timeline">
+        <li><div class="t-time">08:30</div><div class="t-body"><strong>市區／多斯蒂克大道（Dostyk）</strong><span>先寄行李再輕裝；Yandex 約 15–25 分</span></div></li>
+        <li><div class="t-time">11:30</div><div class="t-body"><strong>Navat（Dostyk 48）餞行</strong><span>Dostyk 48 中亞菜；可順走捷運美站</span></div></li>
+        <li><div class="t-time">～20:00</div><div class="t-body"><strong>取行李 → 機場 ALA</strong><span>國際線建議提前 3 小時到機場（ALA T2）</span></div></li>
+        <li><div class="t-time">23:25</div><div class="t-body"><strong>CA456 → 天府（TFU）</strong><span>ALA T2 起飛 → 次日 06:30 抵 TFU T1；行李<strong>不直掛</strong></span></div></li>
+      </ul>
+      <div class="callout"><strong>關鍵：</strong>Zumma <strong>12:00</strong> 退房；最晚約 <strong>20:00</strong> 前出發去 ALA。</div>
+    </div>
+      <div class="fig-row"><figure class="fig"><img loading="lazy" alt="潘菲洛夫公園" src="https://commons.wikimedia.org/wiki/Special:FilePath/WWII_Monument_Feat%2C_Almaty.jpg?width=700"><figcaption><b>潘菲洛夫公園（Panfilov）</b>市區外拍；可順路 Dostyk 買 Rakhat 巧克力</figcaption></figure><figure class="fig"><img loading="lazy" alt="市區天際線" src="https://commons.wikimedia.org/wiki/Special:FilePath/View_on_Kok-Tobe_from_Cenral_Park.jpg?width=700"><figcaption><b>市區補貨（Almaty）</b>輕裝逛街後務必回飯店取行李再去機場</figcaption></figure></div>
+    </div>
+    <div class="stack map-stack">
+      <div id="map-d03" class="map"></div>
+      <p class="map-note">市區補貨 → 取行李 → 機場 ALA</p>
+    </div>
+  </div>
+</section>
+
+<!-- 10/4 成都跨機場 -->
+<section class="slide" data-title="10/4轉機" data-map="xfer">
+  <div class="split-title head-only">
+    <div><div class="eyebrow">Flights · TFU → CTU</div><h2>天府抵 → 雙流起飛</h2></div>
+    <div class="day-badge">行李不直掛</div>
+  </div>
+  <div class="fill day-layout">
+    <div class="day-main">
+      <div class="card" style="flex:0 0 auto; padding:10px 12px">
+        <span class="tag warn">回程班機（中國國航｜訂位 PCRVL7）</span>
+        <table>
+          <tr><th>航班</th><th>起飛</th><th>抵達</th></tr>
+          <tr>
+            <td><strong>CA456</strong></td>
+            <td>ALA T2　<strong>10/3 23:25</strong></td>
+            <td>TFU T1　<strong>10/4 06:30</strong></td>
+          </tr>
+          <tr>
+            <td><strong>CA417</strong></td>
+            <td>CTU T1　<strong>10/4 13:30</strong></td>
+            <td>TPE T2　<strong>10/4 16:55</strong></td>
+          </tr>
+        </table>
+        <p class="mini" style="margin:6px 0 0">訂單 1658113539668809｜天府→雙流行李須重託運｜名義停留約 7h</p>
+      </div>
+      <div class="card scroll-safe">
+        <ul class="timeline">
+          <li><div class="t-time">06:30</div><div class="t-body"><strong>抵成都天府（TFU）T1</strong><span>CA456；出關後立刻領行李（不直掛）</span></div></li>
+          <li><div class="t-time">07:30+</div><div class="t-body"><strong>往成都雙流（CTU）</strong><span>約 50–70 km；7 人＋行李建議滴滴 2 台，約 50–70 分</span></div></li>
+          <li><div class="t-time">～10:30</div><div class="t-body"><strong>到齊雙流（CTU）T1</strong><span>目標最晚這時抵達，留 2.5–3h 報到安檢</span></div></li>
+          <li><div class="t-time">13:30</div><div class="t-body"><strong>CA417 → 桃園（TPE）T2</strong><span>約 16:55 抵台；訂位 <strong>PCRVL7</strong></span></div></li>
+        </ul>
+        <div class="callout"><strong>備援：</strong>地鐵 19 號線約 30–55 分較省，但大件行李較累；勿出城逛街。</div>
+      </div>
+    </div>
+    <div class="stack map-stack">
+      <div id="map-xfer-chengdu" class="map"></div>
+      <div class="legend">
+        <span><i class="dot" style="background:#e07a5f"></i>① 天府到達 CA456</span>
+        <span><i class="dot" style="background:#d4a017"></i>② 雙流起飛 CA417</span>
+      </div>
+      <p class="map-note">天府 TFU T1 06:30 抵 → 雙流 CTU T1 13:30 飛｜行李不直掛</p>
+    </div>
+  </div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-title="美食購物">
+  <div class="split-title head-only">
+    <div><div class="eyebrow">Food</div><h2>餐廳與伴手禮</h2></div>
+  </div>
+  <div class="fill cols-3" style="grid-template-rows:1fr 1fr">
+    <div class="pic-card"><div class="shot"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/Green_Market%2C_Almaty_02.jpg?width=600"></div><div class="txt"><span class="tag ok">9/26 午</span><h3>Auyl Cafe（市集旁）</h3><p>綠色市集旁在地食堂；逛完直接吃最順，份量大、適合一群人。</p></div></div>
+    <div class="pic-card"><div class="shot"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/Zenkov_Cathedral%2C_Almaty.jpg?width=600"></div><div class="txt"><span class="tag">9/25・27 晚</span><h3>Chad Cafe（果戈里街）</h3><p>與 Gogol 同街（Gogolya 13）；咖啡輕食，抵達晚或山區回城收尾方便。</p></div></div>
+    <div class="pic-card"><div class="shot"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/View_on_Kok-Tobe_from_Cenral_Park.jpg?width=600"></div><div class="txt"><span class="tag route">9/26・10/3</span><h3>Navat（多斯蒂克大道）</h3><p>Dostyk 48 中亞菜；9/26 可接纜車動線，10/3 適合餞行。</p></div></div>
+    <div class="pic-card"><div class="shot"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/WWII_Monument_Feat%2C_Almaty.jpg?width=600"></div><div class="txt"><span class="tag ok">10/1 晚</span><h3>Paradise（Zumma 同街）</h3><p>Zumma 同街；四日團回城累了就近吃，不用再叫車。</p></div></div>
+    <div class="pic-card"><div class="shot"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/Medeu.jpg?width=600"></div><div class="txt"><span class="tag route">10/2 晚</span><h3>AUYL 山區店（Medeu）</h3><p>梅代烏山景餐廳；7 人請先訂。<strong>不是</strong>市集旁那家 Auyl Cafe。</p></div></div>
+    <div class="pic-card"><div class="shot"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/KazakstanMountainsKalvisVitolins.JPG?width=600"></div><div class="txt"><span class="tag">10/2 午</span><h3>Del Papa（Medeu 義式）</h3><p>梅代烏義式；飛行傘前後空檔好點，不用回市區。</p></div></div>
+  </div>
+  <p class="ov-hint">伴手禮建議：Rakhat 巧克力、市集乾果香料｜四日團午晚請導遊現場推薦</p>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-title="打包清單">
+  <div class="split-title head-only">
+    <div><div class="eyebrow">Packing</div><h2>打包與緊急</h2></div>
+  </div>
+  <div class="fill cols-3">
+    <div class="pic-card">
+      <div class="shot"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/Zenkov_Cathedral%2C_Almaty.jpg?width=700"></div>
+      <div class="txt"><h3>證件金錢</h3>
+        <p>護照＋EVISA 紙本／電子檔、機票與保險、四日團確認單。美金現金＋信用卡 2 張；Gogol／Zumma 電話先存進手機。</p></div>
+    </div>
+    <div class="pic-card">
+      <div class="shot"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/Kazakhstan_steppe_Almaty_Province_(1).jpg?width=700"></div>
+      <div class="txt"><h3>衣物裝備</h3>
+        <p>薄長袖＋防風防水外套、登山鞋、薄手套、墨鏡防曬。Type C／F 轉接、大容量行動電源；峽谷／湖區可備頭燈。</p></div>
+    </div>
+    <div class="pic-card">
+      <div class="shot"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/Medeu.jpg?width=700"></div>
+      <div class="txt"><h3>App 與緊急</h3>
+        <p>阿拉木圖：2GIS、Yandex Go、ONAY。成都跨機場：滴滴＋高德。離線翻譯備俄文／簡中。當地緊急 <strong>112</strong>。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 16 -->
+<section class="slide" data-title="地名速查">
+  <div class="split-title head-only">
+    <div><div class="eyebrow">Place names</div><h2>景點速查（搜尋用原文）</h2></div>
+  </div>
+  <div class="fill places-layout">
+    <div class="fig-row three places-figs">
+      <figure class="fig"><img loading="lazy" alt="曾科夫大教堂" src="https://commons.wikimedia.org/wiki/Special:FilePath/Zenkov_Cathedral%2C_Almaty.jpg?width=800"><figcaption><b>曾科夫大教堂（Zenkov）</b>英文 Zenkov／俄文 Вознесенский собор</figcaption></figure>
+      <figure class="fig"><img loading="lazy" alt="夏рын峽谷" src="https://commons.wikimedia.org/wiki/Special:FilePath/Чарынский_каньон%2C_Долина_Замков_2.jpg?width=800"><figcaption><b>夏рын峽谷（Charyn）</b>英文 Charyn Canyon／俄文 Чарынский каньон</figcaption></figure>
+      <figure class="fig"><img loading="lazy" alt="凱因迪湖" src="https://commons.wikimedia.org/wiki/Special:FilePath/Kaindy_lake_south-east_Kazakhstan.jpg?width=800"><figcaption><b>凱因迪湖（Kaindy）</b>英文 Kaindy Lake／俄文 Каинды</figcaption></figure>
+    </div>
+    <div class="card places-card">
+      <div class="place-grid">
+        <div><b>阿拉木圖／機場 ALA</b>　Almaty · Алматы</div>
+        <div><b>Gogol 飯店</b>　Resident Hotel · ул. Гоголя 129</div>
+        <div><b>Zumma 飯店</b>　Zumma Hotel · ул. Радлова 17</div>
+        <div><b>綠色市集</b>　Green Bazaar · Зелёный базар</div>
+        <div><b>曾科夫大教堂</b>　Zenkov · Вознесенский собор</div>
+        <div><b>潘菲洛夫公園</b>　Panfilov Park · Парк 28 гвардейцев</div>
+        <div><b>絲路街／捷運站</b>　Zhibek Zholy · Жібек Жолы</div>
+        <div><b>阿拜站</b>　Abay · Абай</div>
+        <div><b>科克托別</b>　Kok Tobe · Көк-Төбе／Кок-Тобе</div>
+        <div><b>大阿拉木圖湖</b>　Big Almaty Lake · БАО</div>
+        <div><b>霍比特瀑布</b>　Hobbit／Ayusai Waterfall</div>
+        <div><b>阿爾馬阿拉桑</b>　Alma-Arasan · Алма-Арасан</div>
+        <div><b>貝斯托別／巴爾托蓋</b>　Bestobe / Bartogai</div>
+        <div><b>薩特村</b>　Saty · Саты</div>
+        <div><b>科爾賽／凱因迪</b>　Kolsai / Kaindy · Көлсай / Каинды</div>
+        <div><b>夏рын／黑／月亮峽谷</b>　Charyn / Black / Moon</div>
+        <div><b>阿爾滕埃梅爾</b>　Altyn Emel · Алтын-Эмель</div>
+        <div><b>阿克套／卡圖套／沙丘</b>　Aktau / Katutau / Singing Dune</div>
+        <div><b>梅代烏／辛布拉克</b>　Medeu / Shymbulak · Медеу / Шымбулак</div>
+        <div><b>Navat／天府／雙流</b>　Dostyk 48 · TFU / CTU</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 17 -->
+<section class="slide" data-title="結語">
+  <div class="hero hero-photo-charyn" style="align-content:center">
+    <div class="eyebrow">Ready for Almaty</div>
+    <h1>出發前再確認三件事</h1>
+    <div class="grid grid-3" style="margin-top:28px; width:100%">
+      <div class="card"><h3>1. 簽證與保險</h3><p>再核 EVISA 效期與姓名拼法；旅平險務必含<strong>登山與飛行傘</strong>，紙本／電子檔各存一份。</p></div>
+      <div class="card"><h3>2. 團單與住宿</h3><p>Premium 跟官方日序（雙湖→峽谷→彩山）；午晚自備預算。Gogol <strong>9/28 13:00</strong> 退、Zumma <strong>10/3 12:00</strong> 退。</p></div>
+      <div class="card"><h3>3. 10/3–10/4 班機</h3><p>CA456 ALA <strong>23:25</strong>→TFU <strong>06:30</strong>；換雙流後 CA417 <strong>13:30</strong>→TPE <strong>16:55</strong>。訂位 <strong>PCRVL7</strong>；<strong>行李不直掛</strong>；建議最晚約 10:30 到雙流 T1。</p></div>
+    </div>
+    <p class="lead" style="margin-top:24px">電腦簡報：<strong>哈薩克旅遊計畫.html</strong>　｜　手機閱讀：<strong>哈薩克旅遊計畫-手機.html</strong>　｜　圖片：Wikimedia Commons</p>
+  </div>
+</section>
+
+</div>
+
+<div class="nav">
+  <button type="button" id="prevBtn">← 上一頁</button>
+  <div class="progress-wrap">
+    <div class="progress-bar"><i id="bar"></i></div>
+    <div class="page" id="pageLabel">1 / 1</div>
+  </div>
+  <div class="kbd">← →</div>
+  <button type="button" id="nextBtn">下一頁 →</button>
+</div>
+
+<script>
+const places = {
+  ala: [43.3521, 77.0405],
+  center: [43.2565, 76.9450],
+  gogol: [43.259377, 76.933045],
+  zumma: [43.2485, 76.8890],
+  metroAbay: [43.2390, 76.9455],
+  metroAlmaly: [43.2505, 76.9440],
+  metroBaikonur: [43.2320, 76.9050],
+  auyl: [43.2638, 76.9555],
+  chad: [43.2615, 76.9405],
+  navat: [43.2408, 76.9568],
+  green: [43.2625, 76.9570],
+  panfilov: [43.2589, 76.9550],
+  zenkov: [43.2588, 76.9532],
+  zhibek: [43.2567, 76.9495],
+  koktobe: [43.2336, 76.9756],
+  hobbit: [43.0925, 76.9780],
+  bal: [43.0506, 76.9850],
+  almaarasan: [43.0880, 76.9100],
+  bestobe: [43.420, 78.380],
+  bartogai: [43.348, 78.501],
+  charyn: [43.345, 79.072],
+  black: [43.250, 78.980],
+  moon: [43.220, 79.020],
+  kolsai: [42.936, 78.324],
+  kaindy: [42.985, 78.464],
+  saty: [43.010, 78.310],
+  aktau: [44.020, 79.050],
+  katutau: [44.050, 78.950],
+  singing: [43.900, 78.570],
+  basshy: [44.000, 78.800],
+  museum: [43.2356, 76.9589],
+  republic: [43.2380, 76.9454],
+  dostyk: [43.2334, 76.9567],
+  medeu: [43.1567, 77.0583],
+  shymbulak: [43.1280, 77.0800],
+  tfu: [30.3125, 104.4414],
+  ctu: [30.5785, 103.9470]
+};
+
+const maps = {};
+function photoIcon(url, kind, color) {
+  const c = color || '#d4a017';
+  return L.divIcon({
+    className: 'photo-pin',
+    html: `<div class="photo-pin-wrap"><div class="leaflet-photo-icon ${kind || ''}" style="border-color:${c}"><img src="${url}" alt=""></div><i class="photo-pin-dot" style="background:${c}"></i></div>`,
+    iconSize: [36, 52],
+    iconAnchor: [18, 48],
+    popupAnchor: [0, -48]
+  });
+}
+function fitMapTo(map, latlngs, opts) {
+  if (!latlngs || !latlngs.length) return;
+  const maxZ = (opts && opts.fitMaxZoom) != null ? opts.fitMaxZoom : 14;
+  if (latlngs.length === 1) {
+    map.setView(latlngs[0], Math.min(maxZ, (opts && opts.singleZoom) || 13));
+    return;
+  }
+  map.fitBounds(L.latLngBounds(latlngs), {
+    padding: [44, 44],
+    maxZoom: maxZ
+  });
+}
+function makeMap(id, center, zoom, markers, line, opts) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (maps[id]) {
+    setTimeout(() => {
+      maps[id].invalidateSize();
+      if (maps[id]._fitLatLngs) fitMapTo(maps[id], maps[id]._fitLatLngs, maps[id]._fitOpts);
+    }, 80);
+    return;
+  }
+  const map = L.map(el, { scrollWheelZoom: false }).setView(center, zoom);
+  // OSM.org blocks browser apps (403); Carto dark_all now needs API key.
+  // Esri Canvas Dark Gray is free public raster tiles.
+  const tileUrl = (opts && opts.tiles) ||
+    'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}';
+  L.tileLayer(tileUrl, {
+    attribution: 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, OpenStreetMap',
+    maxZoom: 16,
+    updateWhenIdle: true,
+    updateWhenZooming: false
+  }).addTo(map);
+  L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+    { maxZoom: 16, opacity: 0.9, updateWhenIdle: true, updateWhenZooming: false }
+  ).addTo(map);
+  const latlngs = [];
+  markers.forEach((m, i) => {
+    const color = m.color || '#d4a017';
+    let marker;
+    if (m.img) {
+      marker = L.marker(m.ll, { icon: photoIcon(m.img, m.kind || '', color) }).addTo(map);
+    } else {
+      marker = L.circleMarker(m.ll, {
+        radius: 10, color: '#0f1c24', weight: 2, fillColor: color, fillOpacity: 1
+      }).addTo(map);
+    }
+    marker.bindPopup(`<strong>${m.title}</strong><br>${m.sub || ''}`);
+    if (m.label) {
+      marker.bindTooltip(`${i + 1}. ${m.label}`, { permanent: false, direction: 'top' });
+    }
+    latlngs.push(m.ll);
+  });
+  if (line && latlngs.length > 1) {
+    L.polyline(latlngs, { color: '#3aa6a0', weight: 3, opacity: 0.9, dashArray: '6 8' }).addTo(map);
+  }
+  map._fitLatLngs = latlngs;
+  map._fitOpts = opts || {};
+  fitMapTo(map, latlngs, map._fitOpts);
+  maps[id] = map;
+  setTimeout(() => {
+    map.invalidateSize();
+    fitMapTo(map, latlngs, map._fitOpts);
+  }, 120);
+}
+
+function initMapsFor(slide) {
+  const key = slide.getAttribute('data-map');
+  if (!key) return;
+  if (key === 'overview') {
+    const W = (f) => `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(f)}?width=160`;
+    makeMap('map-overview', [43.4, 78.2], 7, [
+      { ll: places.ala, title: '阿拉木圖機場（ALA）', sub: '9/25 抵 · 10/3 夜航離', color: '#e07a5f', label: '機場' },
+      { ll: places.zenkov, title: '曾科夫大教堂（Zenkov）', sub: '9/26 市區日', color: '#3aa6a0', kind: 'city', label: '市區', img: W('Zenkov_Cathedral%2C_Almaty.jpg') },
+      { ll: places.bal, title: '大阿拉木圖湖（Big Almaty Lake）', sub: '9/27 天山一日', color: '#7ec87a', kind: 'mtn', label: '天山', img: W('Большое_Алматинское_Озеро_%28БАО%29.jpg') },
+      { ll: places.bartogai, title: '貝斯托別／巴爾托蓋（Bestobe／Bartogai）', sub: '團 D1 東部', color: '#d4a017', kind: 'tour', label: 'D1 東部', img: W('Маки_и_Черный_каньон_0328.jpg') },
+      { ll: places.kolsai, title: '科爾賽／凱因迪（Kolsai／Kaindy）', sub: '團 D2 湖區', color: '#d4a017', kind: 'tour', label: 'D2 湖區', img: W('Lower_Kolsay_Lake_in_April.jpg') },
+      { ll: places.charyn, title: '夏рын峽谷（Charyn）', sub: '團 D3 峽谷', color: '#d4a017', kind: 'tour', label: 'D3 峽谷', img: W('Чарынский_каньон%2C_Долина_Замков_2.jpg') },
+      { ll: places.singing, title: '阿爾滕埃梅爾（Altyn Emel）', sub: '團 D4 彩山／沙丘', color: '#d4a017', kind: 'tour', label: 'D4 國家公園', img: W('Геологическая_порода_с_разноцветным_наслоением.jpg') },
+      { ll: places.medeu, title: '梅代烏（Medeu）', sub: '10/2 山區', color: '#7ec87a', kind: 'mtn', label: 'Medeu', img: W('Medeu.jpg') }
+    ], true);
+  }
+  if (key === 'd25') {
+    makeMap('map-d25', [43.3, 76.99], 11, [
+      { ll: places.ala, title: '阿拉木圖機場（ALA）', color: '#e07a5f', label: '機場 ALA' },
+      { ll: places.gogol, title: 'Gogol 飯店（Resident Hotel）', sub: 'Gogolya St 129', color: '#3aa6a0', label: 'Gogol' }
+    ], true);
+  }
+  if (key === 'd26') {
+    makeMap('map-d26', [43.25, 76.96], 13, [
+      { ll: places.green, title: '綠色市集（Green Bazaar）', sub: '步行約 12–15 分自 Gogol', color: '#3aa6a0', label: '市集' },
+      { ll: places.auyl, title: 'Auyl Cafe（Ауыл Кафе）', sub: '午餐 · Pushkin', color: '#e07a5f', label: 'Auyl 午' },
+      { ll: places.panfilov, title: '28烈士公園（Panfilov Park）', color: '#3aa6a0', label: '公園' },
+      { ll: places.zenkov, title: '曾科夫大教堂（Zenkov Cathedral）', sub: 'Вознесенский собор', color: '#3aa6a0', label: '大教堂' },
+      { ll: places.zhibek, title: '絲路步行街／Zhibek 捷運站', sub: 'Metro Zhibek Zholy', color: '#d4a017', label: '捷運①進站' },
+      { ll: places.metroAbay, title: '阿拜捷運站（Abay）', sub: '美站 → 往纜車', color: '#d4a017', label: '捷運①出站' },
+      { ll: places.navat, title: 'Navat（多斯蒂克大道）', sub: 'Dostyk 48 · 可選早晚餐', color: '#e07a5f', label: 'Navat' },
+      { ll: places.koktobe, title: '科克托別纜車（Kok Tobe）', sub: '步行約 12–15 分自 Abay', color: '#3aa6a0', label: '纜車' }
+    ], true);
+  }
+  if (key === 'd27') {
+    makeMap('map-d27', [43.12, 76.95], 11, [
+      { ll: places.center, title: '阿拉木圖出發（Almaty）', color: '#e07a5f', label: '出發' },
+      { ll: places.hobbit, title: '霍比特人瀑布（Hobbit Waterfall）', sub: 'Ayusai Gorge', color: '#3aa6a0', label: '霍比特人瀑布' },
+      { ll: places.bal, title: '大阿拉木圖湖（Big Almaty Lake）', sub: 'Большое Алматинское озеро', color: '#3aa6a0', label: '大阿拉木圖湖' },
+      { ll: places.almaarasan, title: '阿爾馬阿拉桑（Alma-Arasan）', sub: 'Ущелье Алма-Арасан', color: '#d4a017', label: '阿爾馬阿拉桑' }
+    ], true);
+  }
+  if (key === 'tour4') {
+    makeMap('map-tour4', [43.4, 78.4], 7, [
+      { ll: places.gogol, title: 'Gogol 飯店出發', color: '#e07a5f', label: 'Gogol' },
+      { ll: places.bestobe, title: '貝斯托別（Bestobe）', sub: 'D1', color: '#d4a017', label: '1 Bestobe' },
+      { ll: places.bartogai, title: '巴爾托蓋（Bartogai）', sub: 'D1', color: '#d4a017', label: '2 Bartogai' },
+      { ll: places.saty, title: '薩特村（Saty）', sub: 'D1–D2 住', color: '#3aa6a0', label: '3 Saty' },
+      { ll: places.kolsai, title: '科爾賽湖（Kolsai）', sub: 'D2', color: '#d4a017', label: '4 Kolsai' },
+      { ll: places.kaindy, title: '凱因迪湖（Kaindy）', sub: 'D2', color: '#d4a017', label: '5 Kaindy' },
+      { ll: places.charyn, title: '夏рын（Charyn）', sub: 'D3', color: '#d4a017', label: '6 Charyn' },
+      { ll: places.black, title: '黑峽谷（Black Canyon）', sub: 'D3', color: '#d4a017', label: '7 Black' },
+      { ll: places.moon, title: '月亮峽谷（Moon Canyon）', sub: 'D3', color: '#d4a017', label: '8 Moon' },
+      { ll: places.aktau, title: '阿克套山（Aktau）', sub: 'D4', color: '#d4a017', label: '9 Aktau' },
+      { ll: places.katutau, title: '卡圖套山（Katutau）', sub: 'D4', color: '#d4a017', label: '10 Katutau' },
+      { ll: places.singing, title: '歌唱沙丘（Singing Dune）', sub: 'D4', color: '#d4a017', label: '11 Singing' },
+      { ll: places.zumma, title: 'Zumma Hotel（Radlova）', sub: '回城', color: '#3aa6a0', label: 'Zumma' }
+    ], true);
+  }
+  if (key === 'd28') {
+    makeMap('map-d28', [43.35, 77.7], 8, [
+      { ll: places.gogol, title: 'Gogol 飯店（Resident Hotel）', color: '#e07a5f', label: '退房' },
+      { ll: places.bestobe, title: '貝斯托別（Bestobe Mountains）', color: '#d4a017', label: '貝斯托別' },
+      { ll: places.bartogai, title: '巴爾托蓋水庫（Bartogai）', color: '#d4a017', label: '巴爾托蓋' },
+      { ll: places.saty, title: '薩特村（Saty）過夜', color: '#3aa6a0', label: 'Saty' }
+    ], true);
+  }
+  if (key === 'd29') {
+    makeMap('map-d29', [42.98, 78.4], 10, [
+      { ll: places.saty, title: '薩特村（Saty）', color: '#3aa6a0', label: 'Saty' },
+      { ll: places.kolsai, title: '科爾賽湖（Kolsai Lakes）', color: '#d4a017', label: '科爾賽湖' },
+      { ll: places.kaindy, title: '凱因迪湖（Kaindy Lake）', color: '#d4a017', label: '凱因迪湖' }
+    ], true);
+  }
+  if (key === 'd30') {
+    makeMap('map-d30', [43.25, 79.0], 9, [
+      { ll: places.charyn, title: '夏рын峽谷（Charyn Canyon）', color: '#d4a017', label: '夏рын' },
+      { ll: places.black, title: '黑峽谷（Black Canyon）', color: '#d4a017', label: '黑峽谷' },
+      { ll: places.moon, title: '月亮峽谷（Moon Canyon）', color: '#d4a017', label: '月亮峽谷' }
+    ], true);
+  }
+  if (key === 'd01') {
+    makeMap('map-d01', [43.7, 78.7], 8, [
+      { ll: places.charyn, title: '自峽谷住宿出發', color: '#3aa6a0', label: '出發' },
+      { ll: places.basshy, title: '巴什村（Basshy）', color: '#d4a017', label: '巴什村' },
+      { ll: places.aktau, title: '阿克套山（Aktau）', color: '#d4a017', label: '阿克套' },
+      { ll: places.katutau, title: '卡圖套山（Katutau）', color: '#d4a017', label: '卡圖套' },
+      { ll: places.singing, title: '歌唱沙丘（Singing Dune）', color: '#d4a017', label: '歌唱沙丘' },
+      { ll: places.zumma, title: 'Zumma Hotel（Radlova）', sub: 'Radlova 17', color: '#e07a5f', label: 'Zumma' }
+    ], true);
+  }
+  if (key === 'd02') {
+    makeMap('map-d02', [43.18, 77.05], 11, [
+      { ll: places.medeu, title: '梅代烏（Medeu）', color: '#d4a017', label: 'Medeu' },
+      { ll: places.shymbulak, title: '辛布拉克（Shymbulak）', color: '#d4a017', label: '辛布拉克' },
+      { ll: places.zumma, title: 'Zumma Hotel（Radlova）', color: '#3aa6a0', label: 'Zumma' }
+    ], true);
+  }
+  if (key === 'd03') {
+    makeMap('map-d03', [43.24, 76.96], 12, [
+      { ll: places.zumma, title: 'Zumma Hotel 退房（12:00）', sub: '12:00', color: '#e07a5f', label: '退房' },
+      { ll: places.museum, title: '中央國家博物館（Central State Museum）', color: '#3aa6a0', label: '博物館' },
+      { ll: places.republic, title: '獨立紀念碑／共和國廣場（Republic Square）', color: '#3aa6a0', label: '共和國廣場' },
+      { ll: places.metroAlmaly, title: '阿爾馬雷捷運站（Almaly）', sub: '可選捷運②', color: '#d4a017', label: '捷運②' },
+      { ll: places.metroBaikonur, title: '拜科努爾站（Baikonur）', sub: '航天主題', color: '#d4a017', label: 'Baikonur' },
+      { ll: places.dostyk, title: '多斯蒂克廣場（Dostyk Plaza）', color: '#3aa6a0', label: 'Dostyk Plaza' },
+      { ll: places.ala, title: '機場 ALA（23:25 CA456）', color: '#e07a5f', label: '機場' }
+    ], true);
+  }
+  if (key === 'xfer') {
+    makeMap('map-xfer-chengdu', [30.45, 104.19], 9, [
+      { ll: places.tfu, title: '① 成都天府機場（TFU）到達', sub: 'CA456 約 06:30 抵 T1 → 出關領行李後出發', color: '#e07a5f', label: '① 天府到達' },
+      { ll: places.ctu, title: '② 成都雙流機場（CTU）起飛', sub: 'CA417 13:30 T1 → TPE 16:55 · 行李須再託運', color: '#d4a017', label: '② 雙流起飛' }
+    ], true);
+  }
+}
+
+const slides = [...document.querySelectorAll('.slide')];
+let idx = 0;
+const bar = document.getElementById('bar');
+const pageLabel = document.getElementById('pageLabel');
+const wantPdf = /[?&]pdf=1(?:&|$)/.test(location.search);
+const wantMobile = document.documentElement.classList.contains('mobile-read')
+  || /[?&]mobile=1(?:&|$)/.test(location.search)
+  || (window.matchMedia('(max-width: 820px)').matches && !/[?&]deck=1(?:&|$)/.test(location.search) && !wantPdf);
+const wantDeck = /[?&]deck=1(?:&|$)/.test(location.search);
+
+function show(i) {
+  idx = (i + slides.length) % slides.length;
+  slides.forEach((s, n) => s.classList.toggle('active', n === idx));
+  bar.style.width = ((idx + 1) / slides.length * 100) + '%';
+  pageLabel.textContent = `${idx + 1} / ${slides.length}　${slides[idx].dataset.title || ''}`;
+  initMapsFor(slides[idx]);
+  slides[idx].scrollTop = 0;
+}
+
+function enableMobileRead() {
+  document.documentElement.classList.add('mobile-read');
+  const toc = document.getElementById('tocPanel');
+  const tocBtn = document.getElementById('tocBtn');
+  const modeSwitch = document.getElementById('modeSwitch');
+  modeSwitch.href = '哈薩克旅遊計畫.html?deck=1';
+  modeSwitch.textContent = '電腦版';
+  toc.hidden = false;
+  toc.innerHTML = slides.map((s, i) => {
+    const id = 'sec-' + i;
+    s.id = id;
+    s.classList.add('active');
+    return `<a href="#${id}"><span>${String(i + 1).padStart(2, '0')}</span>${s.dataset.title || ''}</a>`;
+  }).join('');
+  tocBtn.onclick = () => toc.classList.toggle('open');
+  toc.querySelectorAll('a').forEach((a) => {
+    a.addEventListener('click', () => toc.classList.remove('open'));
+  });
+  document.querySelectorAll('[data-goto]').forEach((el) => {
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
+      const t = el.getAttribute('data-goto');
+      const s = slides.find((x) => x.dataset.title === t);
+      if (s) {
+        toc.classList.remove('open');
+        s.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((en) => {
+      if (!en.isIntersecting) return;
+      initMapsFor(en.target);
+      const t = en.target.dataset.title || '';
+      document.querySelector('.m-title').textContent = t;
+    });
+  }, { rootMargin: '120px 0px', threshold: 0.15 });
+  slides.forEach((s) => io.observe(s));
+  if (location.hash) {
+    const target = document.querySelector(location.hash);
+    if (target) setTimeout(() => target.scrollIntoView({ block: 'start' }), 80);
+  }
+}
+
+document.getElementById('prevBtn').onclick = () => show(idx - 1);
+document.getElementById('nextBtn').onclick = () => show(idx + 1);
+
+if (!wantMobile) {
+  document.querySelectorAll('[data-goto]').forEach((el) => {
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
+      const t = el.getAttribute('data-goto');
+      const i = slides.findIndex((s) => s.dataset.title === t);
+      if (i >= 0) show(i);
+    });
+  });
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); show(idx + 1); }
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(idx - 1); }
+    if (e.key === 'Home') show(0);
+    if (e.key === 'End') show(slides.length - 1);
+  });
+  let touchX = null;
+  window.addEventListener('touchstart', (e) => { touchX = e.changedTouches[0].screenX; }, { passive: true });
+  window.addEventListener('touchend', (e) => {
+    if (touchX === null) return;
+    const dx = e.changedTouches[0].screenX - touchX;
+    if (Math.abs(dx) > 50) show(idx + (dx < 0 ? 1 : -1));
+    touchX = null;
+  }, { passive: true });
+}
+
+if (wantPdf) {
+  document.documentElement.classList.add('pdf-export');
+  slides.forEach((s) => {
+    s.classList.add('active');
+    initMapsFor(s);
+  });
+  setTimeout(() => {
+    Object.values(maps).forEach((m) => {
+      m.invalidateSize();
+      if (m._fitLatLngs) fitMapTo(m, m._fitLatLngs, m._fitOpts);
+    });
+  }, 500);
+} else if (wantMobile && !wantDeck) {
+  enableMobileRead();
+} else {
+  show(0);
+}
+</script>
+</body>
+</html>
