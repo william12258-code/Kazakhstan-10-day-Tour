@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>2026 哈薩克 · 阿拉木圖十天九夜（手機版）</title>
+<title>2026 哈薩克 · 阿拉木圖十天九夜</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
@@ -692,13 +692,119 @@
   html.mobile-read .place-grid { grid-template-columns: 1fr; font-size: 15px; overflow: visible; }
   html.mobile-read table { font-size: 14px; display: block; overflow-x: auto; }
   html.mobile-read .split-title { align-items: flex-start; }
+
+  /* —— itinerary detail modal —— */
+  .timeline li[data-place] {
+    cursor: pointer;
+    border-radius: 8px;
+    margin: 0 -6px;
+    padding-left: 6px;
+    padding-right: 6px;
+    transition: background .15s ease;
+  }
+  .timeline li[data-place]:hover,
+  .timeline li[data-place]:focus-visible {
+    background: rgba(58,166,160,.12);
+    outline: none;
+  }
+  .timeline li[data-place]:active { background: rgba(58,166,160,.2); }
+  .timeline li[data-place] .t-body strong::before {
+    content: "";
+    display: inline-block;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--teal); margin-right: 6px;
+    vertical-align: middle; opacity: .85;
+  }
+  body.place-modal-open { overflow: hidden; }
+  .place-modal {
+    position: fixed; inset: 0; z-index: 5000;
+    display: none; align-items: stretch; justify-content: stretch;
+    padding: 0; background: #0b151a;
+  }
+  .place-modal.open { display: flex; }
+  .place-modal-panel {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    display: flex; flex-direction: column;
+    background: linear-gradient(180deg, #1b3642 0%, #122830 100%);
+    border: 0;
+    border-radius: 0;
+    overflow: hidden;
+    box-shadow: none;
+    animation: placeSheet .2s ease;
+    position: relative;
+  }
+  @keyframes placeSheet {
+    from { opacity: .55; }
+    to { opacity: 1; }
+  }
+  .place-modal-hero {
+    position: relative;
+    flex: 1 1 58%;
+    min-height: 48vh;
+    max-height: none;
+    height: auto;
+    background: #0b151a;
+  }
+  .place-modal-hero.hidden { display: none; }
+  .place-modal-hero img {
+    width: 100%; height: 100%;
+    object-fit: contain;
+    object-position: center;
+    display: block;
+  }
+  .place-modal-close {
+    position: absolute; top: calc(10px + env(safe-area-inset-top, 0px)); right: 12px; z-index: 2;
+    width: 40px; height: 40px; border: 0; border-radius: 50%;
+    background: rgba(10,18,24,.8); color: var(--ink);
+    font-size: 24px; line-height: 1; cursor: pointer;
+  }
+  .place-modal-close:hover { background: rgba(58,166,160,.55); }
+  .place-modal-body {
+    flex: 0 1 auto; min-height: 0; overflow: auto;
+    padding: 14px 18px 10px;
+    max-height: 36vh;
+  }
+  .place-modal-body h3 {
+    margin: 0 0 10px; font-size: 22px; color: var(--ink); line-height: 1.3;
+  }
+  .place-modal-body .place-time {
+    display: inline-block; color: var(--accent); font-size: 14px;
+    font-weight: 700; margin-bottom: 8px; letter-spacing: .02em;
+  }
+  .place-modal-body p {
+    margin: 0 0 10px; color: var(--muted); font-size: 16px; line-height: 1.55;
+  }
+  .place-modal-body p:last-child { margin-bottom: 0; }
+  .place-modal-foot {
+    flex: 0 0 auto;
+    padding: 10px 14px calc(14px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--line);
+    background: rgba(10,18,24,.55);
+  }
+  .place-modal-foot.hidden { display: none; }
+  .place-nav-btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; max-width: 560px; margin: 0 auto;
+    padding: 14px 16px; border: 0; border-radius: 10px;
+    background: linear-gradient(135deg, #2a6b66, #3aa6a0);
+    color: #f4efe6; font-size: 16px; font-weight: 600; cursor: pointer;
+    text-decoration: none;
+  }
+  .place-nav-btn:hover { filter: brightness(1.08); }
+  .place-nav-btn svg { width: 18px; height: 18px; flex: 0 0 auto; }
+  /* no image: give body more room */
+  .place-modal-panel:has(.place-modal-hero.hidden) .place-modal-body {
+    flex: 1 1 auto; max-height: none;
+  }
 </style>
 </head>
 <body>
 <header class="m-bar">
   <button type="button" id="tocBtn">目錄</button>
   <div class="m-title">哈薩克十天九夜</div>
-  <a id="modeSwitch" href="哈薩克旅遊計畫.html">電腦版</a>
+  <span id="modeSwitch" aria-hidden="true"></span>
 </header>
 <nav class="m-toc" id="tocPanel"></nav>
 <div class="deck" id="deck">
@@ -715,8 +821,8 @@
       <div class="chip"><strong>10/1–10/3</strong>｜Zumma Hotel</div>
       <div class="chip"><strong>回程</strong>｜天府（TFU）抵 → 雙流（CTU）起飛</div>
     </div>
-    <p class="mini hint-desk" style="margin-top:18px; flex:0 0 auto">← → 或空白鍵翻頁 · 圖片來源 Wikimedia Commons · <a href="哈薩克旅遊計畫-手機.html">手機閱讀版</a></p>
-    <p class="mini hint-phone" style="margin-top:18px; flex:0 0 auto">往下捲動閱讀 · 右上「目錄」跳日 · <a href="哈薩克旅遊計畫.html">電腦簡報版</a></p>
+    <p class="mini hint-desk" style="margin-top:18px; flex:0 0 auto">← → 或空白鍵翻頁 · 圖片來源 Wikimedia Commons</p>
+    <p class="mini hint-phone" style="margin-top:18px; flex:0 0 auto">往下捲動閱讀 · 右上「目錄」跳日 · 點時間列看景點詳情</p>
   </div>
 </section>
 
@@ -972,11 +1078,11 @@
     <div class="day-main">
       <div class="card scroll-safe">
       <ul class="timeline">
-        <li><div class="t-time">13:00</div><div class="t-body"><strong>桃園（TPE）T2 起飛</strong><span>CA186 → 北京首都 PEK T3，約 16:30 抵；行李可直掛到 ALA</span></div></li>
-        <li><div class="t-time">17:35</div><div class="t-body"><strong>北京（PEK）T3 起飛</strong><span>CA799 → 阿拉木圖 ALA T2；T3 轉機約 1 小時</span></div></li>
-        <li><div class="t-time">20:40</div><div class="t-body"><strong>抵阿拉木圖機場（ALA）T2</strong><span>出關後先辦 SIM、小額換堅戈（機場或隔日 Mig）</span></div></li>
-        <li><div class="t-time">21:00+</div><div class="t-body"><strong>Yandex → Gogol 飯店</strong><span>約 30–45 分；地址 Gogolya 129</span></div></li>
-        <li><div class="t-time">晚</div><div class="t-body"><strong>早睡／Chad Cafe</strong><span>同街簡易餐（Gogolya 13）；抵達晚則直接休息</span></div></li>
+        <li data-place="flight_tpe"><div class="t-time">13:00</div><div class="t-body"><strong>桃園（TPE）T2 起飛</strong><span>CA186 → 北京首都 PEK T3，約 16:30 抵；行李可直掛到 ALA</span></div></li>
+        <li data-place="flight_pek"><div class="t-time">17:35</div><div class="t-body"><strong>北京（PEK）T3 起飛</strong><span>CA799 → 阿拉木圖 ALA T2；T3 轉機約 1 小時</span></div></li>
+        <li data-place="ala"><div class="t-time">20:40</div><div class="t-body"><strong>抵阿拉木圖機場（ALA）T2</strong><span>出關後先辦 SIM、小額換堅戈（機場或隔日 Mig）</span></div></li>
+        <li data-place="gogol"><div class="t-time">21:00+</div><div class="t-body"><strong>Yandex → Gogol 飯店</strong><span>約 30–45 分；地址 Gogolya 129</span></div></li>
+        <li data-place="rest"><div class="t-time">晚</div><div class="t-body"><strong>早睡／Chad Cafe</strong><span>同街簡易餐（Gogolya 13）；抵達晚則直接休息</span></div></li>
       </ul>
       <div class="callout"><strong>叫車：</strong>出關後勿跟黃牛；用 Yandex 核對車牌與司機再上車。</div>
     </div>
@@ -999,13 +1105,13 @@
     <div class="day-main">
       <div class="card scroll-safe">
       <ul class="timeline">
-        <li><div class="t-time">09:30</div><div class="t-body"><strong>綠色市集（Green Bazaar）</strong><span>飯店步行 12–15 分；可順買 ONAY 交通卡</span></div></li>
-        <li><div class="t-time">11:30</div><div class="t-body"><strong>Auyl Cafe（Ауыл）午</strong><span>市集旁 3–5 分；在地食堂、逛完直接吃</span></div></li>
-        <li><div class="t-time">13:00</div><div class="t-body"><strong>潘菲洛夫公園＋曾科夫大教堂（Zenkov）</strong><span>再走 10–12 分；進堂請脫帽安靜</span></div></li>
-        <li><div class="t-time">14:30</div><div class="t-body"><strong>絲路步行街（Zhibek Zholy）</strong><span>往 Zhibek 站方向再走 8–12 分後進站</span></div></li>
-        <li><div class="t-time">16:00</div><div class="t-body"><strong>捷運 → 阿拜站（Abay）</strong><span>約 5–7 分；可選旁 Navat 中亞菜</span></div></li>
-        <li><div class="t-time">17:30</div><div class="t-body"><strong>科克托別纜車（Kok Tobe）</strong><span>Abay 出站再走 12–15 分上坡到纜車</span></div></li>
-        <li><div class="t-time">19:30</div><div class="t-body"><strong>回 Gogol 飯店</strong><span>下山後 Yandex 約 15–20 分（夜歸較穩）</span></div></li>
+        <li data-place="green"><div class="t-time">09:30</div><div class="t-body"><strong>綠色市集（Green Bazaar）</strong><span>飯店步行 12–15 分；可順買 ONAY 交通卡</span></div></li>
+        <li data-place="auyl"><div class="t-time">11:30</div><div class="t-body"><strong>Auyl Cafe（Ауыл）午</strong><span>市集旁 3–5 分；在地食堂、逛完直接吃</span></div></li>
+        <li data-place="zenkov"><div class="t-time">13:00</div><div class="t-body"><strong>潘菲洛夫公園＋曾科夫大教堂（Zenkov）</strong><span>再走 10–12 分；進堂請脫帽安靜</span></div></li>
+        <li data-place="zhibek"><div class="t-time">14:30</div><div class="t-body"><strong>絲路步行街（Zhibek Zholy）</strong><span>往 Zhibek 站方向再走 8–12 分後進站</span></div></li>
+        <li data-place="abay"><div class="t-time">16:00</div><div class="t-body"><strong>捷運 → 阿拜站（Abay）</strong><span>約 5–7 分；可選旁 Navat 中亞菜</span></div></li>
+        <li data-place="koktobe"><div class="t-time">17:30</div><div class="t-body"><strong>科克托別纜車（Kok Tobe）</strong><span>Abay 出站再走 12–15 分上坡到纜車</span></div></li>
+        <li data-place="gogol"><div class="t-time">19:30</div><div class="t-body"><strong>回 Gogol 飯店</strong><span>下山後 Yandex 約 15–20 分（夜歸較穩）</span></div></li>
       </ul>
     </div>
       <div class="fig-row"><figure class="fig"><img loading="lazy" alt="綠色市集" src="https://commons.wikimedia.org/wiki/Special:FilePath/Green_Market%2C_Almaty_02.jpg?width=700"><figcaption><b>綠色市集（Green Bazaar）</b>乾果、香料與伴手禮；午餐就在旁 Auyl Cafe</figcaption></figure><figure class="fig"><img loading="lazy" alt="科克托別" src="https://commons.wikimedia.org/wiki/Special:FilePath/View_on_Kok-Tobe_from_Cenral_Park.jpg?width=700"><figcaption><b>科克托別（Kok Tobe）</b>傍晚搭纜車上山，看天山與市區燈火</figcaption></figure></div>
@@ -1027,10 +1133,10 @@
     <div class="day-main">
       <div class="card scroll-safe">
       <ul class="timeline">
-        <li><div class="t-time">1</div><div class="t-body"><strong>霍比特人瀑布（Hobbit／Ayusai）</strong><span>與大湖同谷，先暖身拍照、適應海拔</span></div></li>
-        <li><div class="t-time">2</div><div class="t-body"><strong>大阿拉木圖湖（Big Almaty Lake）</strong><span>約 2500m；帶防風外套與足夠飲水</span></div></li>
-        <li><div class="t-time">3</div><div class="t-body"><strong>阿爾馬阿拉桑（Alma-Arasan）</strong><span>另一條谷；時間不夠可請司機略過</span></div></li>
-        <li><div class="t-time">晚</div><div class="t-body"><strong>Chad Cafe（同街）</strong><span>回 Gogol 同街 Chad Cafe 收尾；明日 13:00 退房接團</span></div></li>
+        <li data-place="hobbit"><div class="t-time">1</div><div class="t-body"><strong>霍比特人瀑布（Hobbit／Ayusai）</strong><span>與大湖同谷，先暖身拍照、適應海拔</span></div></li>
+        <li data-place="bal"><div class="t-time">2</div><div class="t-body"><strong>大阿拉木圖湖（Big Almaty Lake）</strong><span>約 2500m；帶防風外套與足夠飲水</span></div></li>
+        <li data-place="almaarasan"><div class="t-time">3</div><div class="t-body"><strong>阿爾馬阿拉桑（Alma-Arasan）</strong><span>另一條谷；時間不夠可請司機略過</span></div></li>
+        <li data-place="chad"><div class="t-time">晚</div><div class="t-body"><strong>Chad Cafe（同街）</strong><span>回 Gogol 同街 Chad Cafe 收尾；明日 13:00 退房接團</span></div></li>
       </ul>
       <div class="callout"><strong>跟業者說：</strong>霍比特人瀑布＋大阿拉木圖湖（BAL）同谷連走最順；阿爾馬阿拉桑（Alma-Arasan）放最後、時間不夠可砍。</div>
     </div>
@@ -1079,10 +1185,10 @@
     <div class="day-main">
       <div class="card scroll-safe">
       <ul class="timeline">
-        <li><div class="t-time">～13:00</div><div class="t-body"><strong>Gogol 飯店退房</strong><span>行李交團車；約下午出發往東部</span></div></li>
-        <li><div class="t-time">午</div><div class="t-body"><strong>貝斯托別岩丘（Bestobe）</strong><span>草原岩丘地景（Bestobe／Sogety 一帶）</span></div></li>
-        <li><div class="t-time">下午</div><div class="t-body"><strong>巴爾托蓋水庫（Bartogai）</strong><span>環湖山景休息站，補水拍照</span></div></li>
-        <li><div class="t-time">晚</div><div class="t-body"><strong>薩特村 Guest house（Saty）</strong><span>湖區住宿；含早午晚（當地阿姨煮）</span></div></li>
+        <li data-place="checkout"><div class="t-time">～13:00</div><div class="t-body"><strong>Gogol 飯店退房</strong><span>行李交團車；約下午出發往東部</span></div></li>
+        <li data-place="bestobe"><div class="t-time">午</div><div class="t-body"><strong>貝斯托別岩丘（Bestobe）</strong><span>草原岩丘地景（Bestobe／Sogety 一帶）</span></div></li>
+        <li data-place="bartogai"><div class="t-time">下午</div><div class="t-body"><strong>巴爾托蓋水庫（Bartogai）</strong><span>環湖山景休息站，補水拍照</span></div></li>
+        <li data-place="saty"><div class="t-time">晚</div><div class="t-body"><strong>薩特村 Guest house（Saty）</strong><span>湖區住宿；含早午晚（當地阿姨煮）</span></div></li>
       </ul>
     </div>
       <div class="fig-row"><figure class="fig"><img loading="lazy" alt="東部草原岩丘" src="https://commons.wikimedia.org/wiki/Special:FilePath/Kazakhstan_steppe_Almaty_Province_(1).jpg?width=700"><figcaption><b>東部草原岩丘（Bestobe 一帶）</b>往湖區路上的第一印象地景</figcaption></figure><figure class="fig"><img loading="lazy" alt="巴爾托蓋水庫" src="https://commons.wikimedia.org/wiki/Special:FilePath/Kazakhstan_steppe_Almaty_Province_(2).jpg?width=700"><figcaption><b>巴爾托蓋水庫（Bartogai）</b>途中休息點；環湖山景好拍</figcaption></figure></div>
@@ -1104,9 +1210,9 @@
     <div class="day-main">
       <div class="card scroll-safe">
       <ul class="timeline">
-        <li><div class="t-time">上午</div><div class="t-body"><strong>科爾賽下湖（Kolsai）</strong><span>松林碧湖；中湖視體力與時間再走</span></div></li>
-        <li><div class="t-time">下午</div><div class="t-body"><strong>凱因迪沉木湖（Kaindy）</strong><span>水中直立雲杉；團已含越野車接駁</span></div></li>
-        <li><div class="t-time">晚</div><div class="t-body"><strong>薩特村（Saty）</strong><span>湖區濕涼；建議防水鞋＋薄外套</span></div></li>
+        <li data-place="kolsai"><div class="t-time">上午</div><div class="t-body"><strong>科爾賽下湖（Kolsai）</strong><span>松林碧湖；中湖視體力與時間再走</span></div></li>
+        <li data-place="kaindy"><div class="t-time">下午</div><div class="t-body"><strong>凱因迪沉木湖（Kaindy）</strong><span>水中直立雲杉；團已含越野車接駁</span></div></li>
+        <li data-place="saty"><div class="t-time">晚</div><div class="t-body"><strong>薩特村（Saty）</strong><span>湖區濕涼；建議防水鞋＋薄外套</span></div></li>
       </ul>
     </div>
       <div class="fig-row"><figure class="fig"><img loading="lazy" alt="科爾賽湖" src="https://commons.wikimedia.org/wiki/Special:FilePath/Lower_Kolsay_Lake_in_April.jpg?width=700"><figcaption><b>科爾賽湖（Kolsai）</b>三連湖中最容易抵達的下湖，松林環繞</figcaption></figure><figure class="fig"><img loading="lazy" alt="凱因迪沉木湖" src="https://commons.wikimedia.org/wiki/Special:FilePath/Kaindy_lake_south-east_Kazakhstan.jpg?width=700"><figcaption><b>凱因迪沉木湖（Kaindy）</b>地震後沉水的雲杉；需越野車（團含）</figcaption></figure></div>
@@ -1128,10 +1234,10 @@
     <div class="day-main">
       <div class="card scroll-safe">
       <ul class="timeline">
-        <li><div class="t-time">1</div><div class="t-body"><strong>夏рын城堡谷（Charyn）</strong><span>紅橙岩柱；觀景台／下谷，園區接駁團含</span></div></li>
-        <li><div class="t-time">2</div><div class="t-body"><strong>黑峽谷（Black Canyon）</strong><span>岩色更深、線條更銳，補拍不同氛圍</span></div></li>
-        <li><div class="t-time">3</div><div class="t-body"><strong>月亮／黃峽谷（Moon／Yellow）</strong><span>視體力與日照，聽導遊決定去留</span></div></li>
-        <li><div class="t-time">晚</div><div class="t-body"><strong>峽谷附近住</strong><span>團安排 Guest house；含早午晚</span></div></li>
+        <li data-place="charyn"><div class="t-time">1</div><div class="t-body"><strong>夏рын城堡谷（Charyn）</strong><span>紅橙岩柱；觀景台／下谷，園區接駁團含</span></div></li>
+        <li data-place="black"><div class="t-time">2</div><div class="t-body"><strong>黑峽谷（Black Canyon）</strong><span>岩色更深、線條更銳，補拍不同氛圍</span></div></li>
+        <li data-place="moon"><div class="t-time">3</div><div class="t-body"><strong>月亮／黃峽谷（Moon／Yellow）</strong><span>視體力與日照，聽導遊決定去留</span></div></li>
+        <li data-place="canyon_stay"><div class="t-time">晚</div><div class="t-body"><strong>峽谷附近住</strong><span>團安排 Guest house；含早午晚</span></div></li>
       </ul>
     </div>
       <div class="fig-row"><figure class="fig"><img loading="lazy" alt="夏рын城堡谷" src="https://commons.wikimedia.org/wiki/Special:FilePath/Чарынский_каньон%2C_Долина_Замков_2.jpg?width=700"><figcaption><b>夏рын城堡谷（Charyn）</b>紅橙岩柱群，常被比作迷你大峽谷</figcaption></figure><figure class="fig"><img loading="lazy" alt="黑峽谷一帶" src="https://commons.wikimedia.org/wiki/Special:FilePath/Маки_и_Черный_каньон_0328.jpg?width=700"><figcaption><b>黑峽谷（Black Canyon）一帶</b>岩色更深、陰影更強，適合對比拍攝</figcaption></figure></div>
@@ -1153,10 +1259,10 @@
     <div class="day-main">
       <div class="card scroll-safe">
       <ul class="timeline">
-        <li><div class="t-time">①</div><div class="t-body"><strong>阿克套彩山（Aktau）</strong><span>粉彩層理像火星；墨鏡與防曬必備</span></div></li>
-        <li><div class="t-time">②</div><div class="t-body"><strong>卡圖套（Katutau）</strong><span>火山岩質感地景；順序聽司機安排</span></div></li>
-        <li><div class="t-time">③</div><div class="t-body"><strong>歌唱沙丘（Singing Dune）</strong><span>草原中突兀大沙丘；風況好時可聞沙鳴</span></div></li>
-        <li><div class="t-time">晚</div><div class="t-body"><strong>Zumma＋Paradise（同街）</strong><span>回城入住 Zumma；同街 Paradise 就近吃</span></div></li>
+        <li data-place="aktau"><div class="t-time">①</div><div class="t-body"><strong>阿克套彩山（Aktau）</strong><span>粉彩層理像火星；墨鏡與防曬必備</span></div></li>
+        <li data-place="katutau"><div class="t-time">②</div><div class="t-body"><strong>卡圖套（Katutau）</strong><span>火山岩質感地景；順序聽司機安排</span></div></li>
+        <li data-place="singing"><div class="t-time">③</div><div class="t-body"><strong>歌唱沙丘（Singing Dune）</strong><span>草原中突兀大沙丘；風況好時可聞沙鳴</span></div></li>
+        <li data-place="zumma"><div class="t-time">晚</div><div class="t-body"><strong>Zumma＋Paradise（同街）</strong><span>回城入住 Zumma；同街 Paradise 就近吃</span></div></li>
       </ul>
     </div>
       <div class="fig-row"><figure class="fig"><img loading="lazy" alt="阿克套彩山" src="https://commons.wikimedia.org/wiki/Special:FilePath/Геологическая_порода_с_разноцветным_наслоением.jpg?width=700"><figcaption><b>阿克套彩山（Aktau）</b>粉紅／黃層理，曠野感很強、防曬要足</figcaption></figure><figure class="fig"><img loading="lazy" alt="歌唱沙丘" src="https://commons.wikimedia.org/wiki/Special:FilePath/Алтын_Эмиль%2C_глаз_Пустыни.jpg?width=700"><figcaption><b>歌唱沙丘（Singing Dune）</b>草原中突然出現的大沙丘，風大時會發聲</figcaption></figure></div>
@@ -1178,11 +1284,11 @@
     <div class="day-main">
       <div class="card scroll-safe">
       <ul class="timeline">
-        <li><div class="t-time">08:30</div><div class="t-body"><strong>Yandex → 梅代烏（Medeu）</strong><span>從 Zumma 約 25–40 分；無班機壓力</span></div></li>
-        <li><div class="t-time">上午</div><div class="t-body"><strong>辛布拉克纜車（Shymbulak）</strong><span>上山風大，外套必帶；可先觀景再決定飛行傘</span></div></li>
-        <li><div class="t-time">10:30+</div><div class="t-body"><strong>飛行傘</strong><span>約 37,000 KZT；看風況，不安全可不飛</span></div></li>
-        <li><div class="t-time">午</div><div class="t-body"><strong>Del Papa（梅代烏義式）</strong><span>梅代烏義式；飛行傘空檔好點</span></div></li>
-        <li><div class="t-time">晚</div><div class="t-body"><strong>AUYL 山區店（≠市集 Auyl）</strong><span>7 人請訂；≠綠色市集旁的 Auyl Cafe</span></div></li>
+        <li data-place="medeu"><div class="t-time">08:30</div><div class="t-body"><strong>Yandex → 梅代烏（Medeu）</strong><span>從 Zumma 約 25–40 分；無班機壓力</span></div></li>
+        <li data-place="shymbulak"><div class="t-time">上午</div><div class="t-body"><strong>辛布拉克纜車（Shymbulak）</strong><span>上山風大，外套必帶；可先觀景再決定飛行傘</span></div></li>
+        <li data-place="paraglide"><div class="t-time">10:30+</div><div class="t-body"><strong>飛行傘</strong><span>約 37,000 KZT；看風況，不安全可不飛</span></div></li>
+        <li data-place="delpapa"><div class="t-time">午</div><div class="t-body"><strong>Del Papa（梅代烏義式）</strong><span>梅代烏義式；飛行傘空檔好點</span></div></li>
+        <li data-place="auyl_mtn"><div class="t-time">晚</div><div class="t-body"><strong>AUYL 山區店（≠市集 Auyl）</strong><span>7 人請訂；≠綠色市集旁的 Auyl Cafe</span></div></li>
       </ul>
     </div>
       <div class="fig-row"><figure class="fig"><img loading="lazy" alt="梅代烏滑冰場" src="https://commons.wikimedia.org/wiki/Special:FilePath/Medeu.jpg?width=700"><figcaption><b>梅代烏滑冰場（Medeu）</b>市區往天山最近入口；纜車由此續上</figcaption></figure><figure class="fig"><img loading="lazy" alt="辛布拉克山區" src="https://commons.wikimedia.org/wiki/Special:FilePath/KazakstanMountainsKalvisVitolins.JPG?width=700"><figcaption><b>辛布拉克山區（Shymbulak）</b>纜車觀景與飛行傘常見起飛區</figcaption></figure></div>
@@ -1204,10 +1310,10 @@
     <div class="day-main">
       <div class="card scroll-safe">
       <ul class="timeline">
-        <li><div class="t-time">08:30</div><div class="t-body"><strong>市區／多斯蒂克大道（Dostyk）</strong><span>先寄行李再輕裝；Yandex 約 15–25 分</span></div></li>
-        <li><div class="t-time">11:30</div><div class="t-body"><strong>Navat（Dostyk 48）餞行</strong><span>Dostyk 48 中亞菜；可順走捷運美站</span></div></li>
-        <li><div class="t-time">～20:00</div><div class="t-body"><strong>取行李 → 機場 ALA</strong><span>國際線建議提前 3 小時到機場（ALA T2）</span></div></li>
-        <li><div class="t-time">23:25</div><div class="t-body"><strong>CA456 → 天府（TFU）</strong><span>ALA T2 起飛 → 次日 06:30 抵 TFU T1；行李<strong>不直掛</strong></span></div></li>
+        <li data-place="dostyk"><div class="t-time">08:30</div><div class="t-body"><strong>市區／多斯蒂克大道（Dostyk）</strong><span>先寄行李再輕裝；Yandex 約 15–25 分</span></div></li>
+        <li data-place="navat"><div class="t-time">11:30</div><div class="t-body"><strong>Navat（Dostyk 48）餞行</strong><span>Dostyk 48 中亞菜；可順走捷運美站</span></div></li>
+        <li data-place="ala_depart"><div class="t-time">～20:00</div><div class="t-body"><strong>取行李 → 機場 ALA</strong><span>國際線建議提前 3 小時到機場（ALA T2）</span></div></li>
+        <li data-place="flight_ala_out"><div class="t-time">23:25</div><div class="t-body"><strong>CA456 → 天府（TFU）</strong><span>ALA T2 起飛 → 次日 06:30 抵 TFU T1；行李<strong>不直掛</strong></span></div></li>
       </ul>
       <div class="callout"><strong>關鍵：</strong>Zumma <strong>12:00</strong> 退房；最晚約 <strong>20:00</strong> 前出發去 ALA。</div>
     </div>
@@ -1247,10 +1353,10 @@
       </div>
       <div class="card scroll-safe">
         <ul class="timeline">
-          <li><div class="t-time">06:30</div><div class="t-body"><strong>抵成都天府（TFU）T1</strong><span>CA456；出關後立刻領行李（不直掛）</span></div></li>
-          <li><div class="t-time">07:30+</div><div class="t-body"><strong>往成都雙流（CTU）</strong><span>約 50–70 km；7 人＋行李建議滴滴 2 台，約 50–70 分</span></div></li>
-          <li><div class="t-time">～10:30</div><div class="t-body"><strong>到齊雙流（CTU）T1</strong><span>目標最晚這時抵達，留 2.5–3h 報到安檢</span></div></li>
-          <li><div class="t-time">13:30</div><div class="t-body"><strong>CA417 → 桃園（TPE）T2</strong><span>約 16:55 抵台；訂位 <strong>PCRVL7</strong></span></div></li>
+          <li data-place="xfer_tfu"><div class="t-time">06:30</div><div class="t-body"><strong>抵成都天府（TFU）T1</strong><span>CA456；出關後立刻領行李（不直掛）</span></div></li>
+          <li data-place="xfer_road"><div class="t-time">07:30+</div><div class="t-body"><strong>往成都雙流（CTU）</strong><span>約 50–70 km；7 人＋行李建議滴滴 2 台，約 50–70 分</span></div></li>
+          <li data-place="xfer_ctu"><div class="t-time">～10:30</div><div class="t-body"><strong>到齊雙流（CTU）T1</strong><span>目標最晚這時抵達，留 2.5–3h 報到安檢</span></div></li>
+          <li data-place="flight_home"><div class="t-time">13:30</div><div class="t-body"><strong>CA417 → 桃園（TPE）T2</strong><span>約 16:55 抵台；訂位 <strong>PCRVL7</strong></span></div></li>
         </ul>
         <div class="callout"><strong>備援：</strong>地鐵 19 號線約 30–55 分較省，但大件行李較累；勿出城逛街。</div>
       </div>
@@ -1267,22 +1373,6 @@
 </section>
 
 <!-- 14 -->
-<section class="slide" data-title="美食購物">
-  <div class="split-title head-only">
-    <div><div class="eyebrow">Food</div><h2>餐廳與伴手禮</h2></div>
-  </div>
-  <div class="fill cols-3" style="grid-template-rows:1fr 1fr">
-    <div class="pic-card"><div class="shot"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/Green_Market%2C_Almaty_02.jpg?width=600"></div><div class="txt"><span class="tag ok">9/26 午</span><h3>Auyl Cafe（市集旁）</h3><p>綠色市集旁在地食堂；逛完直接吃最順，份量大、適合一群人。</p></div></div>
-    <div class="pic-card"><div class="shot"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/Zenkov_Cathedral%2C_Almaty.jpg?width=600"></div><div class="txt"><span class="tag">9/25・27 晚</span><h3>Chad Cafe（果戈里街）</h3><p>與 Gogol 同街（Gogolya 13）；咖啡輕食，抵達晚或山區回城收尾方便。</p></div></div>
-    <div class="pic-card"><div class="shot"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/View_on_Kok-Tobe_from_Cenral_Park.jpg?width=600"></div><div class="txt"><span class="tag route">9/26・10/3</span><h3>Navat（多斯蒂克大道）</h3><p>Dostyk 48 中亞菜；9/26 可接纜車動線，10/3 適合餞行。</p></div></div>
-    <div class="pic-card"><div class="shot"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/WWII_Monument_Feat%2C_Almaty.jpg?width=600"></div><div class="txt"><span class="tag ok">10/1 晚</span><h3>Paradise（Zumma 同街）</h3><p>Zumma 同街；四日團回城累了就近吃，不用再叫車。</p></div></div>
-    <div class="pic-card"><div class="shot"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/Medeu.jpg?width=600"></div><div class="txt"><span class="tag route">10/2 晚</span><h3>AUYL 山區店（Medeu）</h3><p>梅代烏山景餐廳；7 人請先訂。<strong>不是</strong>市集旁那家 Auyl Cafe。</p></div></div>
-    <div class="pic-card"><div class="shot"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/KazakstanMountainsKalvisVitolins.JPG?width=600"></div><div class="txt"><span class="tag">10/2 午</span><h3>Del Papa（Medeu 義式）</h3><p>梅代烏義式；飛行傘前後空檔好點，不用回市區。</p></div></div>
-  </div>
-  <p class="ov-hint">伴手禮建議：Rakhat 巧克力、市集乾果香料｜四日團早午晚已含（零食飲料自備）</p>
-</section>
-
-<!-- 15 -->
 <section class="slide" data-title="打包清單">
   <div class="split-title head-only">
     <div><div class="eyebrow">Packing</div><h2>打包與緊急</h2></div>
@@ -1300,8 +1390,8 @@
     </div>
     <div class="pic-card">
       <div class="shot"><img loading="lazy" alt="" src="https://commons.wikimedia.org/wiki/Special:FilePath/Medeu.jpg?width=700"></div>
-      <div class="txt"><h3>App 與緊急</h3>
-        <p>阿拉木圖：2GIS、Yandex Go、ONAY。成都跨機場：滴滴＋高德。離線翻譯備俄文／簡中。當地緊急 <strong>112</strong>。</p></div>
+      <div class="txt"><h3>App・緊急・伴手禮</h3>
+        <p>阿拉木圖：2GIS、Yandex Go、ONAY。成都：滴滴＋高德。緊急 <strong>112</strong>。伴手禮：Rakhat 巧克力、市集乾果香料；四日團餐已含（零食飲料自備）。</p></div>
     </div>
   </div>
 </section>
@@ -1354,7 +1444,7 @@
       <div class="card"><h3>2. 團單與住宿</h3><p>Standard 跟官方日序（雙湖→峽谷→彩山）；Guest house＋早午晚已含。Gogol <strong>9/28 13:00</strong> 退、Zumma <strong>10/3 12:00</strong> 退。</p></div>
       <div class="card"><h3>3. 10/3–10/4 班機</h3><p>CA456 ALA <strong>23:25</strong>→TFU <strong>06:30</strong>；換雙流後 CA417 <strong>13:30</strong>→TPE <strong>16:55</strong>。訂位 <strong>PCRVL7</strong>；<strong>行李不直掛</strong>；建議最晚約 10:30 到雙流 T1。</p></div>
     </div>
-    <p class="lead" style="margin-top:24px">電腦簡報：<strong>哈薩克旅遊計畫.html</strong>　｜　手機閱讀：<strong>哈薩克旅遊計畫-手機.html</strong>　｜　圖片：Wikimedia Commons</p>
+    <p class="lead" style="margin-top:24px">點各日時間列可看景點詳情與地圖　｜　圖片：Wikimedia Commons</p>
   </div>
 </section>
 
@@ -1368,6 +1458,29 @@
   </div>
   <div class="kbd">← →</div>
   <button type="button" id="nextBtn">下一頁 →</button>
+</div>
+
+<div class="place-modal" id="placeModal" aria-hidden="true" role="dialog" aria-labelledby="placeModalTitle">
+  <div class="place-modal-panel" role="document">
+    <button type="button" class="place-modal-close" id="placeModalClose" aria-label="關閉">×</button>
+    <div class="place-modal-hero" id="placeModalHero">
+      <img id="placeModalImg" alt="" loading="lazy">
+    </div>
+    <div class="place-modal-body">
+      <span class="place-time" id="placeModalTime" hidden></span>
+      <h3 id="placeModalTitle"></h3>
+      <div id="placeModalBody"></div>
+    </div>
+    <div class="place-modal-foot" id="placeModalFoot">
+      <a class="place-nav-btn" id="placeNavBtn" href="#" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M12 21s7-4.5 7-11a7 7 0 1 0-14 0c0 6.5 7 11 7 11z"/>
+          <circle cx="12" cy="10" r="2.5"/>
+        </svg>
+        <span>在 Google 地圖開啟</span>
+      </a>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -1409,6 +1522,412 @@ const places = {
   shymbulak: [43.1280, 77.0800],
   tfu: [30.3125, 104.4414],
   ctu: [30.5785, 103.9470]
+};
+
+const W = (file, w) => `https://commons.wikimedia.org/wiki/Special:FilePath/${file}?width=${w || 900}`;
+
+const placeDetails = {
+  flight_tpe: {
+    title: '桃園（TPE）T2 起飛',
+    body: [
+      '中國國航 CA186：台北桃園 T2 13:00 → 北京首都 PEK T3 約 16:30。',
+      '行李可直掛至阿拉木圖 ALA；訂位 PCRVL7（訂單 1658113539668809）。建議提前 2.5–3 小時到機場。'
+    ]
+  },
+  flight_pek: {
+    title: '北京（PEK）T3 起飛',
+    body: [
+      '同航廈轉機：CA799 17:35 PEK T3 → ALA T2，名義停留約 1 小時。',
+      '時間緊，下機後直接往國際／續程登機口；勿出關逛街。'
+    ]
+  },
+  ala: {
+    title: '阿拉木圖機場（ALA）T2',
+    body: [
+      '國際到達多為 T2。出關後優先辦本地 SIM（Yandex／2GIS／ONAY 都需要門號），再小額換堅戈。',
+      '勿跟黃牛叫車；用 Yandex Go 核對車牌與司機再上車。'
+    ],
+    img: W('View_on_Kok-Tobe_from_Cenral_Park.jpg'),
+    ll: 'ala',
+    mapsQuery: 'Almaty International Airport ALA'
+  },
+  gogol: {
+    title: 'Resident Hotel Gogol',
+    body: [
+      '地址 Gogolya 129，近潘菲洛夫公園與曾科夫大教堂；含早餐，訂房至 9/28 13:00（含 late check-out）。',
+      '機場車程約 30–45 分。市區前段據點：市集、木教堂、絲路街皆可步行串連。'
+    ],
+    img: W('Zenkov_Cathedral%2C_Almaty.jpg'),
+    ll: 'gogol',
+    mapsQuery: 'Resident Hotel Gogol Almaty Gogolya 129'
+  },
+  rest: {
+    title: '抵達晚：早睡／Chad Cafe',
+    body: [
+      '飛機落地已晚，優先休息調時差；同街 Chad Cafe（Gogolya 13）可當備援簡易餐。',
+      '隔天市區日動線長，今晚睡好比多逛更重要。'
+    ],
+    img: W('Zenkov_Cathedral%2C_Almaty.jpg')
+  },
+  green: {
+    title: '綠色市集（Green Bazaar）',
+    body: [
+      '阿拉木圖中央市集（Zhibek Zholy 一帶）：乾果、香料、馬肉腸、kurt 等；免費入場，建議上午去。',
+      '通常週二至週日開放、週一休息；旅客多半需現金（小鈔）。可順買 ONAY 交通卡。從 Gogol 步行約 12–15 分。'
+    ],
+    img: W('Green_Market%2C_Almaty_02.jpg'),
+    ll: 'green',
+    mapsQuery: 'Green Bazaar Almaty'
+  },
+  auyl: {
+    title: 'Auyl Cafe（市集旁）',
+    body: [
+      '綠色市集旁在地食堂（Ауыл），逛完直接吃最順；份量大、適合一群人。',
+      '注意：這家不是 10/2 梅代烏的 AUYL 山區店。'
+    ],
+    img: W('Green_Market%2C_Almaty_02.jpg'),
+    ll: 'auyl',
+    mapsQuery: 'Auyl Cafe Green Bazaar Almaty'
+  },
+  zenkov: {
+    title: '潘菲洛夫公園＋曾科夫大教堂（Zenkov）',
+    body: [
+      '曾科夫（升天）大教堂以全木結構聞名，常被稱為世界最高木造教堂之一；座落 28 烈士／潘菲洛夫公園內。',
+      '進堂請脫帽、保持安靜。公園另有二戰紀念與長明火，與市集動線很近，適合上午市集後接續。'
+    ],
+    img: W('Zenkov_Cathedral%2C_Almaty.jpg'),
+    ll: 'zenkov',
+    mapsQuery: 'Zenkov Cathedral Almaty'
+  },
+  zhibek: {
+    title: '絲路步行街（Zhibek Zholy）',
+    body: [
+      '市區 Arbat 風格步行段：咖啡、街頭表演與伴手店；往 Zhibek Zholy 捷運站方向最順。',
+      '可當「市集／教堂 → 捷運 → 科克托別」的過渡散步段，約 8–12 分走到站。'
+    ],
+    img: W('WWII_Monument_Feat%2C_Almaty.jpg'),
+    ll: 'zhibek',
+    mapsQuery: 'Zhibek Zholy pedestrian street Almaty'
+  },
+  abay: {
+    title: '捷運阿拜站（Abay）',
+    body: [
+      '阿拉木圖單線捷運美站之一；從 Zhibek 到 Abay 約 5–7 分。',
+      '出站後往科克托別纜車站還有約 12–15 分上坡；站旁可選 Navat 中亞菜補能量。'
+    ],
+    img: W('View_on_Kok-Tobe_from_Cenral_Park.jpg'),
+    ll: 'metroAbay',
+    mapsQuery: 'Abay metro station Almaty'
+  },
+  koktobe: {
+    title: '科克托別（Kok Tobe）',
+    body: [
+      '市區南緣小山，纜車上山可看天山與夜景；建議傍晚／日落時段最美。',
+      '山頂有觀景、輕食與小遊樂設施。下山後夜歸建議直接 Yandex 回 Gogol（約 15–20 分）。'
+    ],
+    img: W('View_on_Kok-Tobe_from_Cenral_Park.jpg'),
+    ll: 'koktobe',
+    mapsQuery: 'Kok Tobe Almaty cable car'
+  },
+  hobbit: {
+    title: '霍比特人瀑布（Hobbit／Ayusai）',
+    body: [
+      '與大阿拉木圖湖同谷的暖身景點，適合先適應海拔與拍照。',
+      '跟業者建議：瀑布＋大湖連走最順；阿爾馬阿拉桑另谷，時間不夠可砍。'
+    ],
+    img: W('KazakstanMountainsKalvisVitolins.JPG'),
+    ll: 'hobbit',
+    mapsQuery: 'Ayusai Waterfall Almaty Hobbit'
+  },
+  bal: {
+    title: '大阿拉木圖湖（Big Almaty Lake）',
+    body: [
+      '天山高山水庫，海拔約 2,500–2,511 m；湖水常呈藍綠，是市區南郊經典半日行程。',
+      '為飲用水源禁止游泳；位處邊境敏感地帶，請攜帶護照。風大溫差大，防風外套與飲水必備；秋初水色與落葉常最美。'
+    ],
+    img: 'https://commons.wikimedia.org/wiki/Special:FilePath/Большое_Алматинское_Озеро_%28БАО%29.jpg?width=900',
+    ll: 'bal',
+    mapsQuery: 'Big Almaty Lake'
+  },
+  almaarasan: {
+    title: '阿爾馬阿拉桑（Alma-Arasan）',
+    body: [
+      '另一條山谷，溫泉／健行氛圍，與大湖路線分開。',
+      '時間不夠可請司機略過，把體力留給大湖與隔日四日團。'
+    ],
+    img: W('KazakstanMountainsKalvisVitolins.JPG'),
+    ll: 'almaarasan',
+    mapsQuery: 'Alma-Arasan Almaty'
+  },
+  chad: {
+    title: 'Chad Cafe（果戈里街）',
+    body: [
+      '與 Gogol 同街（Gogolya 13）：咖啡輕食，山區回城或抵達晚的方便收尾。',
+      '今晚早點睡：明日約 13:00 退房接四日團。'
+    ],
+    img: W('Zenkov_Cathedral%2C_Almaty.jpg'),
+    ll: 'chad',
+    mapsQuery: 'Chad Cafe Gogolya Almaty'
+  },
+  checkout: {
+    title: 'Gogol 飯店退房接團',
+    body: [
+      '約 13:00 退房（含 late check-out）；行李交團車後往東部出發。',
+      '確認護照、現金零食、防風外套與行動電源都在隨身／車上。'
+    ],
+    img: W('Zenkov_Cathedral%2C_Almaty.jpg'),
+    ll: 'gogol',
+    mapsQuery: 'Resident Hotel Gogol Almaty'
+  },
+  bestobe: {
+    title: '貝斯托別岩丘（Bestobe）',
+    body: [
+      '往湖區路上的草原岩丘地景（Bestobe／Sogety 一帶），四日團 D1 第一印象景。',
+      '曠野日照強，墨鏡與防曬有用；多半是短暫停留拍照。'
+    ],
+    img: W('Kazakhstan_steppe_Almaty_Province_(1).jpg'),
+    ll: 'bestobe',
+    mapsQuery: 'Bestobe mountains Almaty region'
+  },
+  bartogai: {
+    title: '巴爾托蓋水庫（Bartogai）',
+    body: [
+      '東部途中環湖休息站：補水、洗手間與山景拍照。',
+      '之後續往薩特村（Saty）湖區住宿；晚上 Guest house 含餐。'
+    ],
+    img: W('Kazakhstan_steppe_Almaty_Province_(2).jpg'),
+    ll: 'bartogai',
+    mapsQuery: 'Bartogai Reservoir Kazakhstan'
+  },
+  saty: {
+    title: '薩特村（Saty）Guest house',
+    body: [
+      '科爾賽湖區基地村；Standard 方案為當地 Guest house，含早午晚（Full Board）。',
+      '湖區濕涼，建議防水鞋＋薄外套；9/28、9/29 兩晚住此（官方日序）。'
+    ],
+    img: W('Lower_Kolsay_Lake_in_April.jpg'),
+    ll: 'saty',
+    mapsQuery: 'Saty village Kolsai Kazakhstan'
+  },
+  kolsai: {
+    title: '科爾賽湖（Kolsai）',
+    body: [
+      '天山松林三連湖；下湖最易抵達，中湖視體力與時間再走。',
+      '與凱因迪同屬東部湖區經典，但路程長，適合過夜而非硬塞一日。團門票與交通已含。'
+    ],
+    img: W('Lower_Kolsay_Lake_in_April.jpg'),
+    ll: 'kolsai',
+    mapsQuery: 'Kolsai Lake Lower Kazakhstan'
+  },
+  kaindy: {
+    title: '凱因迪沉木湖（Kaindy）',
+    body: [
+      '地震後沉水的雲杉直立湖中，是哈薩克最招牌湖景之一。',
+      '需越野車接駁（本團已含）。湖岸濕滑，穿防滑鞋；拍照後別走太近水邊。'
+    ],
+    img: W('Kaindy_lake_south-east_Kazakhstan.jpg'),
+    ll: 'kaindy',
+    mapsQuery: 'Kaindy Lake Kazakhstan'
+  },
+  charyn: {
+    title: '夏рын城堡谷（Charyn）',
+    body: [
+      '常被比作迷你大峽谷：紅橙岩柱的「城堡谷」是主景。可走觀景台或下谷（往河床約 40 分鐘量級）。',
+      '日照強、遮蔭少，帽子／防曬／水必備；園區內接駁團含。盡量避開正午最熱時段長走。'
+    ],
+    img: 'https://commons.wikimedia.org/wiki/Special:FilePath/Чарынский_каньон%2C_Долина_Замков_2.jpg?width=900',
+    ll: 'charyn',
+    mapsQuery: 'Charyn Canyon Valley of Castles'
+  },
+  black: {
+    title: '黑峽谷（Black Canyon）',
+    body: [
+      '夏рын週邊岩色更深、陰影更強，適合與城堡谷對比拍攝。',
+      '停留長度聽導遊／日照；鞋子要防滑。'
+    ],
+    img: 'https://commons.wikimedia.org/wiki/Special:FilePath/Маки_и_Черный_каньон_0328.jpg?width=900',
+    ll: 'black',
+    mapsQuery: 'Black Canyon Charyn Kazakhstan'
+  },
+  moon: {
+    title: '月亮／黃峽谷（Moon／Yellow）',
+    body: [
+      '夏рын三峽谷之一，色調偏淺黃；是否前往視體力與日照。',
+      '聽導遊決定去留即可，不必硬走三條。'
+    ],
+    img: 'https://commons.wikimedia.org/wiki/Special:FilePath/Чарынский_каньон%2C_Долина_Замков_2.jpg?width=900',
+    ll: 'moon',
+    mapsQuery: 'Moon Canyon Charyn Kazakhstan'
+  },
+  canyon_stay: {
+    title: '峽谷附近 Guest house',
+    body: [
+      '團安排當地住宿；Standard 含早午晚。',
+      '隔日進阿爾滕埃梅爾（Altyn Emel），早點休息、補水充電。'
+    ]
+  },
+  aktau: {
+    title: '阿克套彩山（Aktau）',
+    body: [
+      '阿爾滕埃梅爾國家公園內粉彩層理丘陵，曠野感很強，常被形容像火星／層狀甜點。',
+      '無遮蔭，墨鏡與防曬必備；公園移動多靠越野，順序聽司機安排。'
+    ],
+    img: 'https://commons.wikimedia.org/wiki/Special:FilePath/Геологическая_порода_с_разноцветным_наслоением.jpg?width=900',
+    ll: 'aktau',
+    mapsQuery: 'Aktau Mountains Altyn Emel'
+  },
+  katutau: {
+    title: '卡圖套（Katutau）',
+    body: [
+      '火山岩質感地景，與阿克套彩山形成對比。',
+      '停留點聽司機；風沙大時護好相機與眼睛。'
+    ],
+    img: 'https://commons.wikimedia.org/wiki/Special:FilePath/Геологическая_порода_с_разноцветным_наслоением.jpg?width=900',
+    ll: 'katutau',
+    mapsQuery: 'Katutau Mountains Altyn Emel'
+  },
+  singing: {
+    title: '歌唱沙丘（Singing Dune）',
+    body: [
+      '草原中突然出現的大沙丘；乾沙在特定風況下滑動時會發出低沉聲響。',
+      '鞋子進沙很正常；傍晚回城入住 Zumma。'
+    ],
+    img: 'https://commons.wikimedia.org/wiki/Special:FilePath/Алтын_Эмиль%2C_глаз_Пустыни.jpg?width=900',
+    ll: 'singing',
+    mapsQuery: 'Singing Dune Altyn Emel'
+  },
+  zumma: {
+    title: 'Zumma Hotel＋Paradise',
+    body: [
+      '市區後段住宿：ул. Радлова 17（Radlova 17）；入住 10/1、退房 10/3 12:00。',
+      '同街 Paradise 適合四日團回城累了就近吃，不必再叫車。'
+    ],
+    img: W('View_on_Kok-Tobe_from_Cenral_Park.jpg'),
+    ll: 'zumma',
+    mapsQuery: 'Zumma Hotel Almaty Radlova 17'
+  },
+  medeu: {
+    title: '梅代烏（Medeu）',
+    body: [
+      '世界知名高山滑冰場／山區門戶，市區往天山最近入口之一。',
+      '從 Zumma Yandex 約 25–40 分。今天沒班機壓力，可專心纜車與飛行傘。'
+    ],
+    img: W('Medeu.jpg'),
+    ll: 'medeu',
+    mapsQuery: 'Medeu Almaty'
+  },
+  shymbulak: {
+    title: '辛布拉克（Shymbulak）',
+    body: [
+      '梅代烏續上的滑雪／觀景纜車區，海拔更高、風更大。',
+      '外套必帶；可先上山觀景，再決定是否飛行傘。'
+    ],
+    img: W('KazakstanMountainsKalvisVitolins.JPG'),
+    ll: 'shymbulak',
+    mapsQuery: 'Shymbulak Almaty'
+  },
+  paraglide: {
+    title: '飛行傘（Medeu／Shymbulak）',
+    body: [
+      '預估約 37,000 KZT；實際以現場報價為準。',
+      '完全看風況與安全，不安全可不飛。保險需含飛行傘；旅平險出發前再確認。'
+    ],
+    img: W('KazakstanMountainsKalvisVitolins.JPG'),
+    ll: 'shymbulak',
+    mapsQuery: 'Shymbulak paragliding Almaty'
+  },
+  delpapa: {
+    title: 'Del Papa（梅代烏義式）',
+    body: [
+      '梅代烏義式餐廳，飛行傘前後空檔好點，不必回市區。',
+      '山區餐廳尖峰可能要等，7 人可先問是否需訂位。'
+    ],
+    img: W('Medeu.jpg'),
+    ll: 'medeu',
+    mapsQuery: 'Del Papa Medeu Almaty'
+  },
+  auyl_mtn: {
+    title: 'AUYL 山區店（Medeu）',
+    body: [
+      '梅代烏山景餐廳；7 人請先訂。',
+      '不是綠色市集旁的 Auyl Cafe——兩家同名氣氛不同。'
+    ],
+    img: W('Medeu.jpg'),
+    ll: 'medeu',
+    mapsQuery: 'AUYL restaurant Medeu Almaty'
+  },
+  dostyk: {
+    title: '多斯蒂克大道（Dostyk）',
+    body: [
+      '市區大道，可輕裝逛街、買 Rakhat 巧克力等伴手禮。',
+      'Zumma 12:00 退房：先寄／安置行李再出門；傍晚務必回取行李再去機場。'
+    ],
+    img: W('WWII_Monument_Feat%2C_Almaty.jpg'),
+    ll: 'dostyk',
+    mapsQuery: 'Dostyk Avenue Almaty'
+  },
+  navat: {
+    title: 'Navat（Dostyk 48）',
+    body: [
+      '中亞菜餐廳，適合餞行；地址 Dostyk 48。',
+      '可順走捷運美站；記得預留晚上取行李與去 ALA 的時間。'
+    ],
+    img: W('View_on_Kok-Tobe_from_Cenral_Park.jpg'),
+    ll: 'navat',
+    mapsQuery: 'Navat restaurant Dostyk 48 Almaty'
+  },
+  ala_depart: {
+    title: '取行李 → 機場 ALA',
+    body: [
+      '國際線建議提前約 3 小時到 ALA T2；Zumma 退房後最晚約 20:00 前出發較穩。',
+      '先回飯店取行李再叫 Yandex；勿帶著未取行李在市區拖到太晚。'
+    ],
+    img: W('View_on_Kok-Tobe_from_Cenral_Park.jpg'),
+    ll: 'ala',
+    mapsQuery: 'Almaty International Airport ALA'
+  },
+  flight_ala_out: {
+    title: 'CA456 → 成都天府（TFU）',
+    body: [
+      'ALA T2 23:25 起飛 → 次日 06:30 抵 TFU T1。',
+      '關鍵：行李不直掛。天府領行李後還要轉雙流再託運。'
+    ]
+  },
+  xfer_tfu: {
+    title: '抵成都天府（TFU）T1',
+    body: [
+      'CA456 約 06:30 抵 T1；出關後立刻領行李（不直掛）。',
+      '實用分配：出關領行李 0.5–1h ＋ 跨機場 1–1.5h ＋ 雙流報到安檢預留 2.5–3h。'
+    ],
+    img: null,
+    ll: 'tfu',
+    mapsQuery: 'Chengdu Tianfu International Airport TFU'
+  },
+  xfer_road: {
+    title: '天府 → 雙流跨機場',
+    body: [
+      '距離約 50–70 km。7 人＋行李建議滴滴／計程車 2 台，約 50–70 分。',
+      '備援：地鐵 19 號線較省但行李累；機場大巴亦可。App：滴滴＋高德／百度。'
+    ],
+    ll: 'ctu',
+    mapsQuery: 'Chengdu Shuangliu International Airport CTU'
+  },
+  xfer_ctu: {
+    title: '成都雙流（CTU）T1',
+    body: [
+      '目標最晚約 10:00–10:30 到齊，留 2.5–3h 報到安檢。',
+      '行李須重新託運；勿出城逛街。'
+    ],
+    ll: 'ctu',
+    mapsQuery: 'Chengdu Shuangliu International Airport T1'
+  },
+  flight_home: {
+    title: 'CA417 → 桃園（TPE）',
+    body: [
+      'CTU T1 13:30 → TPE T2 約 16:55；訂位 PCRVL7。',
+      '到齊雙流後專心報到，別再離開航廈太遠。'
+    ]
+  }
 };
 
 const maps = {};
@@ -1629,9 +2148,6 @@ function enableMobileRead() {
   document.documentElement.classList.add('mobile-read');
   const toc = document.getElementById('tocPanel');
   const tocBtn = document.getElementById('tocBtn');
-  const modeSwitch = document.getElementById('modeSwitch');
-  modeSwitch.href = '哈薩克旅遊計畫.html?deck=1';
-  modeSwitch.textContent = '電腦版';
   toc.hidden = false;
   toc.innerHTML = slides.map((s, i) => {
     const id = 'sec-' + i;
@@ -1672,6 +2188,91 @@ function enableMobileRead() {
 document.getElementById('prevBtn').onclick = () => show(idx - 1);
 document.getElementById('nextBtn').onclick = () => show(idx + 1);
 
+/* —— place detail modal —— */
+(function setupPlaceModal() {
+  const modal = document.getElementById('placeModal');
+  const hero = document.getElementById('placeModalHero');
+  const img = document.getElementById('placeModalImg');
+  const titleEl = document.getElementById('placeModalTitle');
+  const timeEl = document.getElementById('placeModalTime');
+  const bodyEl = document.getElementById('placeModalBody');
+  const foot = document.getElementById('placeModalFoot');
+  const navBtn = document.getElementById('placeNavBtn');
+  const closeBtn = document.getElementById('placeModalClose');
+
+  function mapsUrl(detail) {
+    if (detail.ll && places[detail.ll]) {
+      const [lat, lng] = places[detail.ll];
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lat + ',' + lng)}`;
+    }
+    if (detail.mapsQuery) {
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(detail.mapsQuery)}`;
+    }
+    return null;
+  }
+
+  function closePlace() {
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('place-modal-open');
+  }
+
+  function openPlace(id, timeLabel) {
+    const detail = placeDetails[id];
+    if (!detail) return;
+    titleEl.textContent = detail.title || id;
+    if (timeLabel) {
+      timeEl.hidden = false;
+      timeEl.textContent = timeLabel;
+    } else {
+      timeEl.hidden = true;
+      timeEl.textContent = '';
+    }
+    bodyEl.innerHTML = (detail.body || []).map((p) => `<p>${p}</p>`).join('');
+    if (detail.img) {
+      hero.classList.remove('hidden');
+      img.src = detail.img;
+      img.alt = detail.title || '';
+    } else {
+      hero.classList.add('hidden');
+      img.removeAttribute('src');
+      img.alt = '';
+    }
+    const url = mapsUrl(detail);
+    if (url) {
+      foot.classList.remove('hidden');
+      navBtn.href = url;
+    } else {
+      foot.classList.add('hidden');
+      navBtn.removeAttribute('href');
+    }
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('place-modal-open');
+  }
+
+  document.addEventListener('click', (e) => {
+    const li = e.target.closest('.timeline li[data-place]');
+    if (!li) return;
+    e.preventDefault();
+    const id = li.getAttribute('data-place');
+    const time = (li.querySelector('.t-time') || {}).textContent || '';
+    openPlace(id, time);
+  });
+
+  closeBtn.addEventListener('click', (e) => { e.stopPropagation(); closePlace(); });
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closePlace();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.classList.contains('open')) {
+      e.preventDefault();
+      closePlace();
+    }
+  });
+  img.addEventListener('error', () => { hero.classList.add('hidden'); });
+})();
+
 if (!wantMobile) {
   document.querySelectorAll('[data-goto]').forEach((el) => {
     el.addEventListener('click', (e) => {
@@ -1682,6 +2283,7 @@ if (!wantMobile) {
     });
   });
   window.addEventListener('keydown', (e) => {
+    if (document.body.classList.contains('place-modal-open')) return;
     if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); show(idx + 1); }
     if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(idx - 1); }
     if (e.key === 'Home') show(0);
@@ -1690,6 +2292,7 @@ if (!wantMobile) {
   let touchX = null;
   window.addEventListener('touchstart', (e) => { touchX = e.changedTouches[0].screenX; }, { passive: true });
   window.addEventListener('touchend', (e) => {
+    if (document.body.classList.contains('place-modal-open')) return;
     if (touchX === null) return;
     const dx = e.changedTouches[0].screenX - touchX;
     if (Math.abs(dx) > 50) show(idx + (dx < 0 ? 1 : -1));
